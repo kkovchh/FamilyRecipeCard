@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Family Recipe Box</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.0/babel.min.js"></script>
+<style>
+  /* Base reset */
+  html, body, #root { height: 100%; }
+  body { margin: 0; }
+  * { box-sizing: border-box; }
+  button { font: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+  input, textarea, select { font: inherit; }
+  img { display: block; max-width: 100%; }
+  a { color: inherit; }
+
+  /* -------------------------------------------------------------- */
+  /* Minimal utility CSS covering exactly the classes this app uses  */
+  /* (replaces the Tailwind CDN, which some networks/sandboxes block */
+  /* and which also isn't recommended for production use).           */
+  /* -------------------------------------------------------------- */
+  .absolute { position: absolute; }
+  .fixed { position: fixed; }
+  .relative { position: relative; }
+  .sticky { position: sticky; }
+  .hidden { display: none; }
+  .flex { display: flex; }
+  .inline-flex { display: inline-flex; }
+  .grid { display: grid; }
+
+  .flex-1 { flex: 1 1 0%; }
+  .flex-col { flex-direction: column; }
+  .flex-wrap { flex-wrap: wrap; }
+  .flex-shrink-0 { flex-shrink: 0; }
+  .items-center { align-items: center; }
+  .items-end { align-items: flex-end; }
+  .justify-between { justify-content: space-between; }
+  .justify-center { justify-content: center; }
+  .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .gap-1\.5 { gap: 0.375rem; }
+  .gap-2 { gap: 0.5rem; }
+  .gap-2\.5 { gap: 0.625rem; }
+  .gap-3 { gap: 0.75rem; }
+  .gap-4 { gap: 1rem; }
+
+  .w-2 { width: 0.5rem; }
+  .w-6 { width: 1.5rem; }
+  .w-7 { width: 1.75rem; }
+  .w-8 { width: 2rem; }
+  .w-9 { width: 2.25rem; }
+  .w-10 { width: 2.5rem; }
+  .w-12 { width: 3rem; }
+  .w-14 { width: 3.5rem; }
+  .w-16 { width: 4rem; }
+  .w-20 { width: 5rem; }
+  .w-24 { width: 6rem; }
+  .w-28 { width: 7rem; }
+  .w-full { width: 100%; }
+
+  .h-2 { height: 0.5rem; }
+  .h-4 { height: 1rem; }
+  .h-6 { height: 1.5rem; }
+  .h-7 { height: 1.75rem; }
+  .h-8 { height: 2rem; }
+  .h-9 { height: 2.25rem; }
+  .h-10 { height: 2.5rem; }
+  .h-14 { height: 3.5rem; }
+  .h-16 { height: 4rem; }
+  .h-20 { height: 5rem; }
+  .h-24 { height: 6rem; }
+  .h-28 { height: 7rem; }
+  .h-32 { height: 8rem; }
+  .h-full { height: 100%; }
+  .min-h-screen { min-height: 100vh; }
+  .min-w-0 { min-width: 0; }
+
+  .max-w-2xl { max-width: 42rem; }
+  .max-w-5xl { max-width: 64rem; }
+  .max-w-sm { max-width: 24rem; }
+  .max-w-md { max-width: 28rem; }
+  .max-h-\[92vh\] { max-height: 92vh; }
+
+  .mb-2 { margin-bottom: 0.5rem; }
+  .mb-3 { margin-bottom: 0.75rem; }
+  .mb-4 { margin-bottom: 1rem; }
+  .mb-5 { margin-bottom: 1.25rem; }
+  .mb-6 { margin-bottom: 1.5rem; }
+  .mb-8 { margin-bottom: 2rem; }
+  .mt-2 { margin-top: 0.5rem; }
+  .mt-3 { margin-top: 0.75rem; }
+  .mt-4 { margin-top: 1rem; }
+  .mt-5 { margin-top: 1.25rem; }
+  .mt-6 { margin-top: 1.5rem; }
+  .mx-auto { margin-left: auto; margin-right: auto; }
+  .-mx-1 { margin-left: -0.25rem; margin-right: -0.25rem; }
+  .ml-auto { margin-left: auto; }
+
+  .p-0 { padding: 0; }
+  .p-3 { padding: 0.75rem; }
+  .p-4 { padding: 1rem; }
+  .p-5 { padding: 1.25rem; }
+  .p-6 { padding: 1.5rem; }
+  .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+  .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+  .px-3\.5 { padding-left: 0.875rem; padding-right: 0.875rem; }
+  .px-4 { padding-left: 1rem; padding-right: 1rem; }
+  .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+  .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+  .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+  .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+  .py-24 { padding-top: 6rem; padding-bottom: 6rem; }
+  .pb-1 { padding-bottom: 0.25rem; }
+  .pb-3 { padding-bottom: 0.75rem; }
+  .pb-4 { padding-bottom: 1rem; }
+  .pb-6 { padding-bottom: 1.5rem; }
+  .pb-24 { padding-bottom: 6rem; }
+  .pt-5 { padding-top: 1.25rem; }
+
+  .top-0 { top: 0; }
+  .top-2 { top: 0.5rem; }
+  .-top-2 { top: -0.5rem; }
+  .bottom-0 { bottom: 0; }
+  .left-1\/2 { left: 50%; }
+  .right-2 { right: 0.5rem; }
+  .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+  .inset-x-0 { left: 0; right: 0; }
+  .-translate-x-1\/2 { transform: translateX(-50%); }
+  .z-10 { z-index: 10; }
+  .z-20 { z-index: 20; }
+  .z-40 { z-index: 40; }
+  .z-50 { z-index: 50; }
+
+  .border { border-width: 1px; border-style: solid; }
+  .border-2 { border-width: 2px; }
+  .border-dashed { border-style: dashed; }
+  .rounded-full { border-radius: 9999px; }
+  .rounded-lg { border-radius: 0.5rem; }
+  .rounded-xl { border-radius: 0.75rem; }
+  .rounded-2xl { border-radius: 1rem; }
+  .rounded-t-2xl { border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
+
+  .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .shadow-md { box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
+
+  .overflow-hidden { overflow: hidden; }
+  .overflow-auto { overflow: auto; }
+  .overflow-x-auto { overflow-x: auto; }
+  .overflow-y-auto { overflow-y: auto; }
+
+  .text-center { text-align: center; }
+  .text-left { text-align: left; }
+  .text-white\/90 { color: rgba(255,255,255,0.9); }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .whitespace-nowrap { white-space: nowrap; }
+
+  .object-cover { object-fit: cover; }
+  .opacity-70 { opacity: 0.7; }
+
+  .transition-all { transition-property: all; transition-duration: 150ms; transition-timing-function: ease; }
+  .transition-colors { transition-property: color, background-color, border-color; transition-duration: 150ms; transition-timing-function: ease; }
+  .transition-shadow { transition-property: box-shadow; transition-duration: 150ms; transition-timing-function: ease; }
+  .transition-transform { transition-property: transform; transition-duration: 150ms; transition-timing-function: ease; }
+  .duration-500 { transition-duration: 500ms; }
+  button.active\:scale-95:active { transform: scale(0.95); }
+  .hover\:shadow-md:hover { box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
+
+  .aspect-\[16\/10\] { aspect-ratio: 16 / 10; }
+  .aspect-\[4\/3\] { aspect-ratio: 4 / 3; }
+
+  .cursor-pointer { cursor: pointer; }
+
+  .space-y-2 > * + * { margin-top: 0.5rem; }
+  .space-y-3 > * + * { margin-top: 0.75rem; }
+
+  @media (min-width: 640px) {
+    .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sm\:items-center { align-items: center; }
+    .sm\:p-6 { padding: 1.5rem; }
+    .sm\:max-w-2xl { max-width: 42rem; }
+    .sm\:max-w-md { max-width: 28rem; }
+    .sm\:rounded-2xl { border-radius: 1rem; }
+  }
+  @media (min-width: 768px) {
+    .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  /* -------------------------------------------------------------- */
+  /* Print styles — used by the recipe detail page's Print button.   */
+  /* Anything marked .no-print (header/search, action buttons,       */
+  /* modals) is hidden; the recipe card is reformatted for paper.    */
+  /* -------------------------------------------------------------- */
+  @media print {
+    .no-print { display: none !important; }
+    .recipe-photo { display: none !important; }
+    html, body { background: #fff !important; }
+    body * {
+      box-shadow: none !important;
+      color: #000 !important;
+      background: transparent !important;
+      background-color: transparent !important;
+      border-color: #bbb !important;
+    }
+    .max-w-2xl { max-width: 100% !important; }
+    .print-card {
+      border: none !important;
+      border-radius: 0 !important;
+    }
+    .ing-bullet { display: none !important; }
+    .ing-row { padding-left: 2em; }
+    @page { margin: 0.6in; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ---------------------------------------------------------------------- */
+/*  window.storage shim                                                    */
+/*  This file is a standalone HTML page, so it doesn't automatically have  */
+/*  access to Claude's artifact `window.storage` API. This shim provides   */
+/*  the same get/set/delete/list interface backed by localStorage, so the  */
+/*  recipe box persists data when opened directly in a browser. If a real  */
+/*  window.storage is already present (e.g. running inside a Claude        */
+/*  artifact), it's left untouched and used instead.                       */
+/* ---------------------------------------------------------------------- */
+if (!window.storage) {
+  const LS_PREFIX = "family-recipe-box::";
+  const nsKey = (key, shared) => `${LS_PREFIX}${shared ? "shared" : "priv"}::${key}`;
+  window.storage = {
+    async get(key, shared = false) {
+      const raw = localStorage.getItem(nsKey(key, shared));
+      if (raw === null) throw new Error(`Key not found: ${key}`);
+      return { key, value: raw, shared: !!shared };
+    },
+    async set(key, value, shared = false) {
+      localStorage.setItem(nsKey(key, shared), value);
+      return { key, value, shared: !!shared };
+    },
+    async delete(key, shared = false) {
+      localStorage.removeItem(nsKey(key, shared));
+      return { key, deleted: true, shared: !!shared };
+    },
+    async list(prefix = "", shared = false) {
+      const nsPrefix = nsKey(prefix, shared);
+      const base = `${LS_PREFIX}${shared ? "shared" : "priv"}::`;
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(nsPrefix)) keys.push(k.slice(base.length));
+      }
+      return { keys, prefix, shared: !!shared };
+    },
+  };
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Minimal inline icon set (lucide-style, stroke-based)                   */
+/* ---------------------------------------------------------------------- */
+function Ico({ size = 20, color = "currentColor", children, viewBox = "0 0 24 24" }) {
+  return (
+    <svg width={size} height={size} viewBox={viewBox} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
+  );
+}
+const Search = (p) => <Ico {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></Ico>;
+const Plus = (p) => <Ico {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Ico>;
+const X = (p) => <Ico {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Ico>;
+const ChevronLeft = (p) => <Ico {...p}><polyline points="15 18 9 12 15 6"/></Ico>;
+const ChevronRight = (p) => <Ico {...p}><polyline points="9 18 15 12 9 6"/></Ico>;
+const Camera = (p) => <Ico {...p}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></Ico>;
+const Upload = (p) => <Ico {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Ico>;
+const Info = (p) => <Ico {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></Ico>;
+const Pencil = (p) => <Ico {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></Ico>;
+const Trash2 = (p) => <Ico {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></Ico>;
+const LayoutGrid = (p) => <Ico {...p}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></Ico>;
+const ListIcon = (p) => <Ico {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></Ico>;
+const ArrowLeft = (p) => <Ico {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></Ico>;
+const Check = (p) => <Ico {...p}><polyline points="20 6 9 17 4 12"/></Ico>;
+const BookOpen = (p) => <Ico {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Ico>;
+const Users = (p) => <Ico {...p}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Ico>;
+const ZoomIn = (p) => <Ico {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></Ico>;
+const ZoomOut = (p) => <Ico {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></Ico>;
+const Heart = ({ size = 20, color = "currentColor", fill = "none" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
+  </svg>
+);
+const Printer = (p) => <Ico {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></Ico>;
+const Share2 = (p) => <Ico {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></Ico>;
+
+/* ---------------------------------------------------------------------- */
+/*  Theme                                                                  */
+/* ---------------------------------------------------------------------- */
+const T = {
+  paper: "#E7DEC4",
+  paperTexture: "#DDD2B2",
+  card: "#FBF6E9",
+  cardBack: "#F3ECD8",
+  ink: "#2B2418",
+  inkSoft: "#6B5D45",
+  inkFaint: "#9C8D6E",
+  pine: "#2F4B3C",
+  pineDark: "#203528",
+  brick: "#93402C",
+  brickSoft: "#B96A52",
+  gold: "#B4872A",
+  line: "#C9BA95",
+  lineSoft: "#DED2AE",
+  tape: "#E9DEB8",
+};
+
+const displayFont = { fontFamily: "'Fraunces', serif" };
+const bodyFont = { fontFamily: "'Libre Baskerville', serif" };
+const monoFont = { fontFamily: "'Courier Prime', monospace" };
+
+const CATEGORY_PRESETS = ["Desserts", "Cookies", "Dinner", "Breakfast", "Appetizers", "Soups", "Bread", "Holiday", "Sides", "Drinks", "Other"];
+
+/* ---------------------------------------------------------------------- */
+/*  Helpers                                                                */
+/* ---------------------------------------------------------------------- */
+function makeId(prefix) {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function hashRotation(id, spread = 2.4) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return ((h % 1000) / 1000 - 0.5) * spread * 2;
+}
+
+const FRACTION_MAP = {
+  "1/2": "½", "1/3": "⅓", "2/3": "⅔", "1/4": "¼", "3/4": "¾",
+  "1/5": "⅕", "2/5": "⅖", "3/5": "⅗", "4/5": "⅘",
+  "1/6": "⅙", "5/6": "⅚", "1/7": "⅐", "1/8": "⅛", "3/8": "⅜",
+  "5/8": "⅝", "7/8": "⅞", "1/9": "⅑", "1/10": "⅒",
+};
+
+// Converts plain-text fractions like "1/2" or "1 1/2" into unicode
+// fraction characters ("½" / "1½"). Only replaces fractions that fall
+// on a word boundary (not part of a date or larger number) so things
+// like "1/2 cup" become "½ cup" and "3 1/4 cups" become "3¼ cups".
+function formatFractions(str) {
+  if (!str) return str;
+  return str.replace(/(\d+)\s+(\d{1,2}\/\d{1,2})\b/g, (m, whole, frac) => {
+    const symbol = FRACTION_MAP[frac];
+    return symbol ? `${whole}${symbol}` : m;
+  }).replace(/\b(\d{1,2}\/\d{1,2})\b/g, (m, frac) => FRACTION_MAP[frac] || m);
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function recipeToText(recipe, member) {
+  const lines = [];
+  lines.push(recipe.name);
+  const sub = [member ? `from ${member.name}'s recipe box` : null, recipe.category || null].filter(Boolean).join(" · ");
+  if (sub) lines.push(sub);
+  lines.push("");
+  if (recipe.ingredients?.length) {
+    lines.push("INGREDIENTS");
+    recipe.ingredients.forEach((ing) => {
+      const heading = ing.match(/^#{1,6}\s*(.+)/);
+      lines.push(heading ? `\n${heading[1].toUpperCase()}` : `- ${ing}`);
+    });
+    lines.push("");
+  }
+  if (recipe.directions?.length) {
+    lines.push("DIRECTIONS");
+    let stepNum = 0;
+    recipe.directions.forEach((step) => {
+      const heading = step.match(/^#{1,6}\s*(.+)/);
+      if (heading) { lines.push(`\n${heading[1].toUpperCase()}`); return; }
+      stepNum += 1;
+      lines.push(`${stepNum}. ${step}`);
+    });
+    lines.push("");
+  }
+  if (recipe.notes) {
+    lines.push("FAMILY MEMORY / STORY");
+    lines.push(recipe.notes);
+  }
+  return lines.join("\n").trim();
+}
+
+async function copyTextToClipboard(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* fall through to legacy approach */ }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+function compressImageFile(file, maxDim = 1100, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = Math.round((height * maxDim) / width); width = maxDim; }
+          else { width = Math.round((width * maxDim) / height); height = maxDim; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => reject(new Error("Could not read image"));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function storageGetAll(prefix) {
+  const out = [];
+  try {
+    const listed = await window.storage.list(prefix, false);
+    if (listed && listed.keys) {
+      for (const k of listed.keys) {
+        try {
+          const r = await window.storage.get(k, false);
+          if (r && r.value) out.push(JSON.parse(r.value));
+        } catch (e) { /* skip unreadable entry */ }
+      }
+    }
+  } catch (e) {
+    console.error("storage list failed", e);
+  }
+  return out;
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Small UI atoms                                                         */
+/* ---------------------------------------------------------------------- */
+function Eyebrow({ children, style }) {
+  return (
+    <div style={{ ...monoFont, letterSpacing: "0.12em", color: T.inkSoft, fontSize: 11, textTransform: "uppercase", ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function Chip({ active, onClick, children, color }) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all border"
+      style={{
+        ...monoFont,
+        fontSize: 12.5,
+        borderColor: active ? (color || T.pine) : T.line,
+        background: active ? (color || T.pine) : "transparent",
+        color: active ? "#fff" : T.inkSoft,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function IconButton({ onClick, title, children, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+      style={{ background: danger ? "rgba(147,64,44,0.1)" : "rgba(47,75,60,0.08)", color: danger ? T.brick : T.pine }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PrimaryButton({ onClick, children, style }) {
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full shadow-sm transition-transform active:scale-95"
+      style={{ background: T.pine, color: "#fff", ...displayFont, fontWeight: 600, fontSize: 14.5, ...style }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function GhostButton({ onClick, children, style }) {
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-colors"
+      style={{ borderColor: T.line, color: T.inkSoft, ...monoFont, fontSize: 12.5, ...style }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmptyState({ icon, title, subtitle }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+      <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: "rgba(47,75,60,0.08)" }}>
+        {icon}
+      </div>
+      <div style={{ ...displayFont, fontSize: 19, color: T.ink, fontWeight: 600 }}>{title}</div>
+      <div style={{ ...bodyFont, fontSize: 13.5, color: T.inkSoft, marginTop: 6, maxWidth: 320 }}>{subtitle}</div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Recipe Card (with flip-to-archive signature interaction)               */
+/* ---------------------------------------------------------------------- */
+function RecipeCard({ recipe, member, onOpen, onToggleFavorite, onOpenArchive, viewMode }) {
+  const [flipped, setFlipped] = useState(false);
+  const rot = hashRotation(recipe.id);
+  const hasArchive = recipe.originalPhotos && recipe.originalPhotos.length > 0;
+
+  if (viewMode === "list") {
+    return (
+      <div
+        className="flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-shadow hover:shadow-md"
+        style={{ background: T.card, border: `1px solid ${T.lineSoft}` }}
+        onClick={() => onOpen(recipe.id)}
+      >
+        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ background: T.paperTexture }}>
+          {recipe.photo ? <img src={recipe.photo} alt="" className="w-full h-full object-cover" /> : null}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div style={{ ...displayFont, fontWeight: 600, fontSize: 16, color: T.ink }} className="truncate">{recipe.name}</div>
+          <div style={{ ...monoFont, fontSize: 11.5, color: T.inkSoft }} className="truncate">
+            {member ? member.name : "Unassigned"} · {recipe.category || "Uncategorized"}
+          </div>
+        </div>
+        <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(recipe.id); }} className="flex-shrink-0">
+          <Heart size={18} fill={recipe.favorite ? T.brick : "none"} color={recipe.favorite ? T.brick : T.inkFaint} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ perspective: 1200 }}>
+      <div
+        className="relative transition-transform duration-500"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: `rotate(${rot}deg) ${flipped ? "rotateY(180deg)" : "rotateY(0deg)"}`,
+        }}
+      >
+        <div
+          className="rounded-lg overflow-hidden cursor-pointer"
+          style={{ backfaceVisibility: "hidden", background: T.card, border: `1px solid ${T.lineSoft}`, boxShadow: "0 3px 10px rgba(43,36,24,0.12)" }}
+          onClick={() => onOpen(recipe.id)}
+        >
+          <div className="relative aspect-[4/3]" style={{ background: T.paperTexture }}>
+            {recipe.photo ? (
+              <img src={recipe.photo} alt={recipe.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center" style={{ color: T.inkFaint }}>
+                <BookOpen size={30} />
+              </div>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleFavorite(recipe.id); }}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(251,246,233,0.9)" }}
+            >
+              <Heart size={16} fill={recipe.favorite ? T.brick : "none"} color={recipe.favorite ? T.brick : T.inkSoft} />
+            </button>
+          </div>
+          <div className="p-3" style={{ borderTop: `1px dashed ${T.line}` }}>
+            <div style={{ ...displayFont, fontWeight: 600, fontSize: 15.5, color: T.ink, lineHeight: 1.2 }} className="truncate">
+              {recipe.name}
+            </div>
+            <div style={{ ...monoFont, fontSize: 11, color: T.inkSoft, marginTop: 4 }} className="truncate">
+              {member ? member.name : "Unassigned"}
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <div style={{ ...monoFont, fontSize: 10.5, color: T.pine }} className="truncate">
+                {recipe.category || "Uncategorized"}
+              </div>
+              {hasArchive && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setFlipped(true); }}
+                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(47,75,60,0.1)", color: T.pine }}
+                  title="View original recipe card"
+                >
+                  <Info size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {hasArchive && (
+          <div
+            className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer flex flex-col items-center justify-center p-3"
+            style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)", background: T.cardBack, border: `1px solid ${T.lineSoft}`, boxShadow: "0 3px 10px rgba(43,36,24,0.12)" }}
+            onClick={() => { onOpenArchive(recipe); }}
+          >
+            <div className="relative" style={{ transform: "rotate(-2.5deg)" }}>
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-4 opacity-70" style={{ background: T.tape }} />
+              <img src={recipe.originalPhotos[0]} alt="Original recipe card" className="w-28 h-32 object-cover shadow-md" style={{ border: `4px solid #fff` }} />
+            </div>
+            <div style={{ ...monoFont, fontSize: 10, color: T.inkSoft, marginTop: 10 }}>
+              {recipe.originalPhotos.length} original photo{recipe.originalPhotos.length > 1 ? "s" : ""}
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); setFlipped(false); }} className="mt-2" style={{ ...monoFont, fontSize: 10.5, color: T.pine, textDecoration: "underline" }}>
+              back to recipe
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Lightbox for original recipe card photos                               */
+/* ---------------------------------------------------------------------- */
+function ArchiveLightbox({ recipe, onClose }) {
+  const [idx, setIdx] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const photos = recipe.originalPhotos || [];
+
+  useEffect(() => { setIdx(0); setZoom(1); }, [recipe]);
+
+  if (!photos.length) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col no-print" style={{ background: "rgba(20,16,10,0.92)" }}>
+      <div className="flex items-center justify-between p-4">
+        <div style={{ ...monoFont, color: "#EFE7CE", fontSize: 12.5 }}>
+          {recipe.name} — original card {idx + 1} / {photos.length}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setZoom((z) => Math.max(1, z - 0.25))} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)", color: "#EFE7CE" }}>
+            <ZoomOut size={16} />
+          </button>
+          <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)", color: "#EFE7CE" }}>
+            <ZoomIn size={16} />
+          </button>
+          <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)", color: "#EFE7CE" }}>
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 flex items-center justify-center overflow-auto px-4 pb-4">
+        <img src={photos[idx]} alt="Original recipe card" style={{ transform: `scale(${zoom})`, transition: "transform 0.2s", maxHeight: "70vh", boxShadow: "0 8px 30px rgba(0,0,0,0.5)" }} />
+      </div>
+      {photos.length > 1 && (
+        <div className="flex items-center justify-center gap-3 pb-6">
+          <button onClick={() => setIdx((i) => (i - 1 + photos.length) % photos.length)} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)", color: "#EFE7CE" }}>
+            <ChevronLeft size={18} />
+          </button>
+          <div className="flex gap-1.5">
+            {photos.map((_, i) => (
+              <button key={i} onClick={() => setIdx(i)} className="w-2 h-2 rounded-full" style={{ background: i === idx ? "#EFE7CE" : "rgba(239,231,206,0.35)" }} />
+            ))}
+          </div>
+          <button onClick={() => setIdx((i) => (i + 1) % photos.length)} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)", color: "#EFE7CE" }}>
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Modal shell                                                            */
+/* ---------------------------------------------------------------------- */
+function ModalShell({ title, onClose, children, wide }) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-0 sm:p-6 no-print" style={{ background: "rgba(20,16,10,0.55)" }}>
+      <div className={`w-full ${wide ? "sm:max-w-2xl" : "sm:max-w-md"} max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl`} style={{ background: T.card }}>
+        <div className="sticky top-0 flex items-center justify-between px-5 py-4 z-10" style={{ background: T.card, borderBottom: `1px dashed ${T.line}` }}>
+          <div style={{ ...displayFont, fontWeight: 700, fontSize: 19, color: T.ink }}>{title}</div>
+          <IconButton onClick={onClose} title="Close"><X size={17} /></IconButton>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children, hint }) {
+  return (
+    <div className="mb-4">
+      <div style={{ ...monoFont, fontSize: 11, color: T.inkSoft, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>{label}</div>
+      {children}
+      {hint && <div style={{ ...bodyFont, fontSize: 11.5, color: T.inkFaint, marginTop: 4 }}>{hint}</div>}
+    </div>
+  );
+}
+
+const inputStyle = {
+  ...bodyFont,
+  width: "100%",
+  padding: "9px 12px",
+  borderRadius: 10,
+  border: `1px solid ${T.line}`,
+  background: "#fff",
+  fontSize: 14.5,
+  color: T.ink,
+  outline: "none",
+};
+
+/* ---------------------------------------------------------------------- */
+/*  Member form modal                                                      */
+/* ---------------------------------------------------------------------- */
+function MemberFormModal({ initial, onClose, onSave }) {
+  const [name, setName] = useState(initial?.name || "");
+  const [nickname, setNickname] = useState(initial?.nickname || "");
+  const [relationship, setRelationship] = useState(initial?.relationship || "");
+  const [description, setDescription] = useState(initial?.description || "");
+  const [photo, setPhoto] = useState(initial?.photo || "");
+  const [busy, setBusy] = useState(false);
+
+  const handlePhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try { setPhoto(await compressImageFile(file, 700, 0.8)); } catch (err) { console.error(err); }
+    setBusy(false);
+  };
+
+  const canSave = name.trim().length > 0;
+
+  return (
+    <ModalShell title={initial ? "Edit family member" : "Add family member"} onClose={onClose}>
+      <div className="flex flex-col items-center mb-4">
+        <div className="w-24 h-24 rounded-full overflow-hidden mb-2 flex items-center justify-center" style={{ background: T.paperTexture, border: `2px solid ${T.line}` }}>
+          {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <Camera size={22} color={T.inkFaint} />}
+        </div>
+        <label style={{ ...monoFont, fontSize: 12, color: T.pine, cursor: "pointer" }}>
+          {busy ? "Processing…" : photo ? "Change photo" : "Upload photo"}
+          <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+        </label>
+      </div>
+
+      <Field label="Name *">
+        <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="Grandma Mary" />
+      </Field>
+      <Field label="Nickname (optional)">
+        <input style={inputStyle} value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Gigi" />
+      </Field>
+      <Field label="Relationship (optional)">
+        <input style={inputStyle} value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="Grandma, Mom, Aunt, Grandpa…" />
+      </Field>
+      <Field label="Short description or memories (optional)">
+        <textarea style={{ ...inputStyle, minHeight: 80 }} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Always made Sunday dinner for the whole family…" />
+      </Field>
+
+      <PrimaryButton
+        style={{ width: "100%", justifyContent: "center", opacity: canSave ? 1 : 0.5 }}
+        onClick={() => {
+          if (!canSave) return;
+          onSave({
+            id: initial?.id || makeId("member"),
+            name: name.trim(),
+            nickname: nickname.trim(),
+            relationship: relationship.trim(),
+            description: description.trim(),
+            photo,
+            dateAdded: initial?.dateAdded || new Date().toISOString(),
+          });
+        }}
+      >
+        <Check size={16} /> {initial ? "Save changes" : "Add family member"}
+      </PrimaryButton>
+    </ModalShell>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Recipe form modal                                                      */
+/* ---------------------------------------------------------------------- */
+function RecipeFormModal({ initial, members, defaultMemberId, categories, recipes, onClose, onSave }) {
+  const [name, setName] = useState(initial?.name || "");
+  const [memberId, setMemberId] = useState(initial?.memberId || defaultMemberId || "");
+  const [category, setCategory] = useState(initial?.category || "");
+  const [ingredients, setIngredients] = useState((initial?.ingredients || []).join("\n"));
+  const [directions, setDirections] = useState((initial?.directions || []).join("\n"));
+  const [tags, setTags] = useState((initial?.tags || []).join(", "));
+  const [notes, setNotes] = useState(initial?.notes || "");
+  const [photo, setPhoto] = useState(initial?.photo || "");
+  const [originalPhotos, setOriginalPhotos] = useState(initial?.originalPhotos || []);
+  const [relatedIds, setRelatedIds] = useState(initial?.relatedIds || []);
+  const [relatedQuery, setRelatedQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const relatableRecipes = (recipes || []).filter((r) => r.id !== initial?.id);
+  const relatedRecipes = relatedIds.map((id) => relatableRecipes.find((r) => r.id === id)).filter(Boolean);
+  const relatedOptions = relatableRecipes.filter((r) => !relatedIds.includes(r.id) && r.name.toLowerCase().includes(relatedQuery.trim().toLowerCase()));
+  const toggleRelated = (id) => setRelatedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
+  const handlePhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try { setPhoto(await compressImageFile(file, 1100, 0.75)); } catch (err) { console.error(err); }
+    setBusy(false);
+  };
+
+  const handleOriginalPhotos = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setBusy(true);
+    try {
+      const compressed = await Promise.all(files.map((f) => compressImageFile(f, 1400, 0.8)));
+      setOriginalPhotos((prev) => [...prev, ...compressed]);
+    } catch (err) { console.error(err); }
+    setBusy(false);
+    e.target.value = "";
+  };
+
+  const moveOriginal = (i, dir) => {
+    setOriginalPhotos((prev) => {
+      const arr = [...prev];
+      const j = i + dir;
+      if (j < 0 || j >= arr.length) return arr;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      return arr;
+    });
+  };
+  const removeOriginal = (i) => setOriginalPhotos((prev) => prev.filter((_, idx) => idx !== i));
+
+  const canSave = name.trim().length > 0 && memberId;
+
+  return (
+    <ModalShell title={initial ? "Edit recipe" : "Add recipe"} onClose={onClose} wide>
+      <Field label="Recipe name *">
+        <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="Chocolate Chip Cookies" />
+      </Field>
+
+      <Field label="Family member *" hint={members.length === 0 ? "Add a family member first so you can assign this recipe." : undefined}>
+        <select style={inputStyle} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+          <option value="">Select who this recipe belongs to…</option>
+          {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+      </Field>
+
+      <Field label="Category">
+        <input style={inputStyle} list="category-options" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Cookies, Dinner, Holiday…" />
+        <datalist id="category-options">
+          {Array.from(new Set([...CATEGORY_PRESETS, ...categories])).map((c) => <option key={c} value={c} />)}
+        </datalist>
+      </Field>
+
+      <Field label="Ingredients" hint="One ingredient per line.">
+        <textarea style={{ ...inputStyle, minHeight: 110 }} value={ingredients} onChange={(e) => setIngredients(e.target.value)} placeholder={"2 cups flour\n1 cup butter, softened\n3/4 cup brown sugar"} />
+      </Field>
+
+      <Field label="Directions" hint="One step per line.">
+        <textarea style={{ ...inputStyle, minHeight: 110 }} value={directions} onChange={(e) => setDirections(e.target.value)} placeholder={"Preheat oven to 375°F.\nCream butter and sugar together.\nBake for 10-12 minutes."} />
+      </Field>
+
+      <Field label="Tags" hint="Comma-separated, e.g. cookies, christmas, chocolate">
+        <input style={inputStyle} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="cookies, christmas, chocolate" />
+      </Field>
+
+      <Field label="Notes / family memory or story (optional)">
+        <textarea style={{ ...inputStyle, minHeight: 80 }} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Grandma always doubled this recipe for the holidays…" />
+      </Field>
+
+      <Field label="Related recipes (optional)" hint="Link a frosting, sauce, or side that pairs with this one — the link shows on both recipes.">
+        {relatedRecipes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {relatedRecipes.map((r) => (
+              <span key={r.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(47,75,60,0.08)", ...monoFont, fontSize: 11.5, color: T.pine }}>
+                {r.name}
+                <button onClick={() => toggleRelated(r.id)} title="Remove link"><X size={11} /></button>
+              </span>
+            ))}
+          </div>
+        )}
+        {relatableRecipes.length === 0 ? (
+          <div style={{ ...monoFont, fontSize: 12, color: T.inkFaint }}>Add another recipe first to link one here.</div>
+        ) : (
+          <>
+            <input style={inputStyle} value={relatedQuery} onChange={(e) => setRelatedQuery(e.target.value)} placeholder="Search recipes to link…" />
+            {relatedQuery.trim() && (
+              <div className="rounded-lg mt-1.5 overflow-hidden" style={{ border: `1px solid ${T.line}`, maxHeight: 160, overflowY: "auto" }}>
+                {relatedOptions.length === 0 ? (
+                  <div style={{ ...monoFont, fontSize: 12, color: T.inkFaint, padding: "8px 10px" }}>No matching recipes.</div>
+                ) : relatedOptions.map((r) => (
+                  <button key={r.id} onClick={() => { toggleRelated(r.id); setRelatedQuery(""); }} className="w-full text-left" style={{ ...bodyFont, fontSize: 13.5, color: T.ink, padding: "8px 10px", borderBottom: `1px solid ${T.lineSoft}`, background: "#fff" }}>
+                    {r.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </Field>
+
+      <Field label="Recipe photo">
+        <div className="flex items-center gap-3">
+          <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0" style={{ background: T.paperTexture, border: `1px solid ${T.line}` }}>
+            {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <Camera size={18} color={T.inkFaint} />}
+          </div>
+          <label style={{ ...monoFont, fontSize: 12, color: T.pine, cursor: "pointer" }}>
+            {photo ? "Change photo" : "Upload photo"}
+            <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+          </label>
+        </div>
+      </Field>
+
+      <Field label="Original recipe card (the handwritten or printed card)" hint="Upload or take multiple photos — these are kept separate from the typed recipe above so the physical history is preserved.">
+        <label className="flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed cursor-pointer" style={{ borderColor: T.line, color: T.pine, ...monoFont, fontSize: 12.5 }}>
+          <Upload size={15} /> {busy ? "Processing…" : "Add original card photo(s)"}
+          <input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handleOriginalPhotos} />
+        </label>
+
+        {originalPhotos.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            {originalPhotos.map((p, i) => (
+              <div key={i} className="relative rounded-lg overflow-hidden" style={{ border: `1px solid ${T.line}` }}>
+                <img src={p} alt="" className="w-full h-24 object-cover" />
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-1 py-1" style={{ background: "rgba(20,16,10,0.55)" }}>
+                  <button onClick={() => moveOriginal(i, -1)} className="text-white/90"><ChevronLeft size={14} /></button>
+                  <button onClick={() => removeOriginal(i)} className="text-white/90"><Trash2 size={13} /></button>
+                  <button onClick={() => moveOriginal(i, 1)} className="text-white/90"><ChevronRight size={14} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <PrimaryButton
+        style={{ width: "100%", justifyContent: "center", opacity: canSave ? 1 : 0.5, marginTop: 4 }}
+        onClick={() => {
+          if (!canSave) return;
+          onSave({
+            id: initial?.id || makeId("recipe"),
+            name: name.trim(),
+            memberId,
+            category: category.trim(),
+            ingredients: ingredients.split("\n").map((s) => formatFractions(s.trim())).filter(Boolean),
+            directions: directions.split("\n").map((s) => formatFractions(s.trim())).filter(Boolean),
+            tags: tags.split(",").map((s) => s.trim()).filter(Boolean),
+            notes: formatFractions(notes.trim()),
+            photo,
+            originalPhotos,
+            relatedIds,
+            favorite: initial?.favorite || false,
+            dateAdded: initial?.dateAdded || new Date().toISOString(),
+          });
+        }}
+      >
+        <Check size={16} /> {initial ? "Save changes" : "Add recipe"}
+      </PrimaryButton>
+    </ModalShell>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Confirm dialog                                                         */
+/* ---------------------------------------------------------------------- */
+function ConfirmDialog({ text, onCancel, onConfirm }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 no-print" style={{ background: "rgba(20,16,10,0.55)" }}>
+      <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: T.card }}>
+        <div style={{ ...bodyFont, fontSize: 14.5, color: T.ink, marginBottom: 16 }}>{text}</div>
+        <div className="flex gap-3">
+          <GhostButton onClick={onCancel} style={{ flex: 1, justifyContent: "center" }}>Cancel</GhostButton>
+          <button onClick={onConfirm} className="flex-1 rounded-full py-2" style={{ background: T.brick, color: "#fff", ...monoFont, fontSize: 12.5 }}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Recipe detail page                                                     */
+/* ---------------------------------------------------------------------- */
+function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, onToggleFavorite, onOpenArchive, onOpenMember, onOpenRecipe }) {
+  const relatedRecipes = (recipe.relatedIds || []).map((id) => (allRecipes || []).find((r) => r.id === id)).filter(Boolean);
+  const [toast, setToast] = useState("");
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2200);
+  };
+
+  const handlePrint = () => {
+    const originalTitle = document.title;
+    document.title = " ";
+    const restore = () => {
+      document.title = originalTitle;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    // Fallback in case afterprint doesn't fire (some older/mobile browsers)
+    setTimeout(restore, 3000);
+    window.print();
+  };
+
+  const handleShare = async () => {
+    const text = recipeToText(recipe, member);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: recipe.name, text });
+        return;
+      } catch (e) {
+        // user cancelled the native share sheet, or it failed — fall back to copy
+        if (e && e.name === "AbortError") return;
+      }
+    }
+    const ok = await copyTextToClipboard(text);
+    showToast(ok ? "Recipe copied to clipboard" : "Couldn't copy — try selecting the text manually");
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 pb-24">
+      <div className="flex items-center justify-between pt-5 pb-4 no-print">
+        <IconButton onClick={onBack} title="Back"><ArrowLeft size={17} /></IconButton>
+        <div className="flex gap-2">
+          <IconButton onClick={() => onToggleFavorite(recipe.id)} title="Favorite">
+            <Heart size={16} fill={recipe.favorite ? T.brick : "none"} color={recipe.favorite ? T.brick : T.inkSoft} />
+          </IconButton>
+          <IconButton onClick={handleShare} title="Share"><Share2 size={15} /></IconButton>
+          <IconButton onClick={handlePrint} title="Print"><Printer size={15} /></IconButton>
+          <IconButton onClick={() => onEdit(recipe)} title="Edit"><Pencil size={15} /></IconButton>
+          <IconButton onClick={() => onDelete(recipe.id)} title="Delete" danger><Trash2 size={15} /></IconButton>
+        </div>
+      </div>
+
+      {toast && (
+        <div
+          className="no-print"
+          style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", background: T.ink, color: "#F3ECD8", ...monoFont, fontSize: 12.5, padding: "10px 16px", borderRadius: 999, boxShadow: "0 6px 18px rgba(0,0,0,0.25)", zIndex: 60, whiteSpace: "nowrap" }}
+        >
+          {toast}
+        </div>
+      )}
+
+      <div className="rounded-2xl overflow-hidden mb-5 print-card" style={{ background: T.card, border: `1px solid ${T.lineSoft}`, boxShadow: "0 4px 16px rgba(43,36,24,0.1)" }}>
+        <div className="aspect-[16/10] recipe-photo" style={{ background: T.paperTexture }}>
+          {recipe.photo ? <img src={recipe.photo} alt={recipe.name} className="w-full h-full object-cover" /> : (
+            <div className="w-full h-full flex items-center justify-center"><BookOpen size={34} color={T.inkFaint} /></div>
+          )}
+        </div>
+        <div className="p-5">
+          <Eyebrow>{recipe.category || "Uncategorized"} · added {formatDate(recipe.dateAdded)}</Eyebrow>
+          <div style={{ ...displayFont, fontWeight: 700, fontSize: 28, color: T.ink, marginTop: 4, lineHeight: 1.15 }}>{recipe.name}</div>
+          {member && (
+            <button onClick={() => onOpenMember(member.id)} className="flex items-center gap-2 mt-3">
+              <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ background: T.paperTexture }}>
+                {member.photo && <img src={member.photo} alt="" className="w-full h-full object-cover" />}
+              </div>
+              <span style={{ ...monoFont, fontSize: 12.5, color: T.pine, textDecoration: "underline" }}>from {member.name}'s recipe box</span>
+            </button>
+          )}
+
+          {recipe.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-4">
+              {recipe.tags.map((t) => (
+                <span key={t} className="px-2.5 py-1 rounded-full" style={{ background: "rgba(47,75,60,0.08)", ...monoFont, fontSize: 10.5, color: T.pine }}>#{t}</span>
+              ))}
+            </div>
+          )}
+
+          {recipe.originalPhotos?.length > 0 && (
+            <button onClick={() => onOpenArchive(recipe)} className="mt-5 w-full flex items-center gap-3 p-3 rounded-xl no-print" style={{ background: T.paper, border: `1px dashed ${T.line}` }}>
+              <div className="w-12 h-14 flex-shrink-0" style={{ transform: "rotate(-3deg)", border: "3px solid #fff", boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>
+                <img src={recipe.originalPhotos[0]} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="text-left">
+                <div style={{ ...displayFont, fontWeight: 600, fontSize: 13.5, color: T.ink }}>View original recipe card</div>
+                <div style={{ ...monoFont, fontSize: 10.5, color: T.inkSoft }}>{recipe.originalPhotos.length} archived photo{recipe.originalPhotos.length > 1 ? "s" : ""}</div>
+              </div>
+              <Info size={16} color={T.pine} className="ml-auto" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {recipe.ingredients?.length > 0 && (
+        <div className="mb-5">
+          <Eyebrow style={{ marginBottom: 8 }}>Ingredients</Eyebrow>
+          <ul style={{ ...bodyFont, fontSize: 15, color: T.ink }} className="space-y-2">
+            {recipe.ingredients.map((ing, i) => {
+              const heading = ing.match(/^#{1,6}\s*(.+)/);
+              if (heading) {
+                return (
+                  <li key={i} style={{ listStyle: "none" }}>
+                    <div style={{ ...displayFont, fontWeight: 700, fontSize: 13, color: T.pine, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: i === 0 ? 0 : 10, marginBottom: 2 }}>
+                      {heading[1]}
+                    </div>
+                  </li>
+                );
+              }
+              return (
+                <li key={i} className="flex gap-2.5 ing-row">
+                  <span className="ing-bullet" style={{ color: T.gold, marginTop: 3 }}>●</span><span>{ing}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {recipe.directions?.length > 0 && (
+        <div className="mb-5">
+          <Eyebrow style={{ marginBottom: 8 }}>Directions</Eyebrow>
+          <ol style={{ ...bodyFont, fontSize: 15, color: T.ink }} className="space-y-3">
+            {(() => {
+              let stepNum = 0;
+              return recipe.directions.map((step, i) => {
+                const heading = step.match(/^#{1,6}\s*(.+)/);
+                if (heading) {
+                  return (
+                    <li key={i} style={{ listStyle: "none" }}>
+                      <div style={{ ...displayFont, fontWeight: 700, fontSize: 13, color: T.pine, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: i === 0 ? 0 : 10, marginBottom: 2 }}>
+                        {heading[1]}
+                      </div>
+                    </li>
+                  );
+                }
+                stepNum += 1;
+                return (
+                  <li key={i} className="flex gap-3">
+                    <span style={{ ...displayFont, fontWeight: 700, color: T.pine, minWidth: 22 }}>{stepNum}.</span>
+                    <span>{step}</span>
+                  </li>
+                );
+              });
+            })()}
+          </ol>
+        </div>
+      )}
+
+      {recipe.notes && (
+        <div className="p-4 rounded-xl mb-5" style={{ background: T.paper, border: `1px dashed ${T.line}` }}>
+          <Eyebrow style={{ marginBottom: 6 }}>Family memory / story</Eyebrow>
+          <div style={{ ...bodyFont, fontStyle: "italic", fontSize: 14, color: T.inkSoft, lineHeight: 1.6 }}>{recipe.notes}</div>
+        </div>
+      )}
+
+      {relatedRecipes.length > 0 && (
+        <div className="no-print">
+          <Eyebrow style={{ marginBottom: 8 }}>See also</Eyebrow>
+          <div className="flex flex-col gap-2">
+            {relatedRecipes.map((r) => (
+              <button key={r.id} onClick={() => onOpenRecipe(r.id)} className="flex items-center gap-3 p-3 rounded-xl text-left" style={{ background: T.card, border: `1px solid ${T.lineSoft}` }}>
+                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: T.paperTexture }}>
+                  {r.photo ? <img src={r.photo} alt="" className="w-full h-full object-cover" /> : <BookOpen size={15} color={T.inkFaint} />}
+                </div>
+                <div className="min-w-0">
+                  <div style={{ ...displayFont, fontWeight: 600, fontSize: 14, color: T.ink }} className="truncate">{r.name}</div>
+                  <div style={{ ...monoFont, fontSize: 10.5, color: T.inkSoft }}>{r.category || "Uncategorized"}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Member detail page                                                     */
+/* ---------------------------------------------------------------------- */
+function MemberDetail({ member, recipes, onBack, onEdit, onDelete, onOpenRecipe, onToggleFavorite, onOpenArchive, onAddRecipe }) {
+  return (
+    <div className="max-w-5xl mx-auto px-4 pb-24">
+      <div className="flex items-center justify-between pt-5 pb-4">
+        <IconButton onClick={onBack} title="Back"><ArrowLeft size={17} /></IconButton>
+        <div className="flex gap-2">
+          <IconButton onClick={() => onEdit(member)} title="Edit"><Pencil size={15} /></IconButton>
+          <IconButton onClick={() => onDelete(member.id)} title="Delete" danger><Trash2 size={15} /></IconButton>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center text-center mb-8">
+        <div className="w-28 h-28 rounded-full overflow-hidden mb-4" style={{ background: T.paperTexture, border: `3px solid #fff`, boxShadow: "0 4px 14px rgba(43,36,24,0.18)" }}>
+          {member.photo ? <img src={member.photo} alt="" className="w-full h-full object-cover" /> : (
+            <div className="w-full h-full flex items-center justify-center"><Users size={28} color={T.inkFaint} /></div>
+          )}
+        </div>
+        <div style={{ ...displayFont, fontWeight: 700, fontSize: 30, color: T.ink }}>{member.name}</div>
+        <Eyebrow style={{ marginTop: 6 }}>{[member.relationship, member.nickname && `“${member.nickname}”`].filter(Boolean).join(" · ")}{member.relationship || member.nickname ? " · " : ""}{recipes.length} recipe{recipes.length !== 1 ? "s" : ""}</Eyebrow>
+        {member.description && (
+          <div style={{ ...bodyFont, fontStyle: "italic", fontSize: 14.5, color: T.inkSoft, marginTop: 12, maxWidth: 480 }}>{member.description}</div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between mb-3">
+        <div style={{ ...displayFont, fontWeight: 600, fontSize: 18, color: T.ink }}>{member.name}'s Recipes</div>
+        <GhostButton onClick={onAddRecipe}><Plus size={13} /> Add recipe</GhostButton>
+      </div>
+
+      {recipes.length === 0 ? (
+        <EmptyState icon={<BookOpen size={22} color={T.pine} />} title="No recipes yet" subtitle={`Add the first recipe to ${member.name}'s box.`} />
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {recipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} member={member} onOpen={onOpenRecipe} onToggleFavorite={onToggleFavorite} onOpenArchive={onOpenArchive} viewMode="grid" />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Main App                                                               */
+/* ---------------------------------------------------------------------- */
+function App() {
+  const [loading, setLoading] = useState(true);
+  const [members, setMembers] = useState([]);
+  const [recipes, setRecipes] = useState([]);
+
+  const [view, setView] = useState({ type: "home" });
+  const [query, setQuery] = useState("");
+  const [filterMember, setFilterMember] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterFavorites, setFilterFavorites] = useState(false);
+  const [viewMode, setViewMode] = useState("grid");
+
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
+  const [showAddRecipe, setShowAddRecipe] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState(null);
+  const [archiveRecipe, setArchiveRecipe] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const [m, r] = await Promise.all([storageGetAll("member:"), storageGetAll("recipe:")]);
+      setMembers(m.sort((a, b) => (a.dateAdded || "").localeCompare(b.dateAdded || "")));
+      setRecipes(r.sort((a, b) => (b.dateAdded || "").localeCompare(a.dateAdded || "")));
+      setLoading(false);
+    })();
+  }, []);
+
+  const persistMember = useCallback(async (member) => {
+    try { await window.storage.set(`member:${member.id}`, JSON.stringify(member), false); }
+    catch (e) { console.error("Failed to save family member", e); }
+  }, []);
+  const persistRecipe = useCallback(async (recipe) => {
+    try { await window.storage.set(`recipe:${recipe.id}`, JSON.stringify(recipe), false); }
+    catch (e) { console.error("Failed to save recipe", e); }
+  }, []);
+
+  const saveMember = async (member) => {
+    setMembers((prev) => {
+      const exists = prev.some((m) => m.id === member.id);
+      return exists ? prev.map((m) => (m.id === member.id ? member : m)) : [...prev, member];
+    });
+    setShowAddMember(false);
+    setEditingMember(null);
+    await persistMember(member);
+  };
+
+  const saveRecipe = async (recipe) => {
+    const prevRecipe = recipes.find((r) => r.id === recipe.id);
+    const prevRelated = new Set(prevRecipe?.relatedIds || []);
+    const nextRelated = new Set(recipe.relatedIds || []);
+    const added = [...nextRelated].filter((id) => !prevRelated.has(id));
+    const removed = [...prevRelated].filter((id) => !nextRelated.has(id));
+
+    let updatedOthers = [];
+    setRecipes((prev) => {
+      const exists = prev.some((r) => r.id === recipe.id);
+      let next = exists ? prev.map((r) => (r.id === recipe.id ? recipe : r)) : [recipe, ...prev];
+      next = next.map((r) => {
+        if (added.includes(r.id)) {
+          const ids = new Set(r.relatedIds || []);
+          ids.add(recipe.id);
+          const updated = { ...r, relatedIds: [...ids] };
+          updatedOthers.push(updated);
+          return updated;
+        }
+        if (removed.includes(r.id)) {
+          const updated = { ...r, relatedIds: (r.relatedIds || []).filter((id) => id !== recipe.id) };
+          updatedOthers.push(updated);
+          return updated;
+        }
+        return r;
+      });
+      return next;
+    });
+    setShowAddRecipe(false);
+    setEditingRecipe(null);
+    await persistRecipe(recipe);
+    await Promise.all(updatedOthers.map((r) => persistRecipe(r)));
+    if (view.type !== "member") setView({ type: "recipe", id: recipe.id });
+  };
+
+  const toggleFavorite = async (id) => {
+    const r = recipes.find((x) => x.id === id);
+    if (!r) return;
+    const updated = { ...r, favorite: !r.favorite };
+    setRecipes((prev) => prev.map((x) => (x.id === id ? updated : x)));
+    await persistRecipe(updated);
+  };
+
+  const deleteRecipeNow = async (id) => {
+    const linkedBack = recipes.filter((r) => (r.relatedIds || []).includes(id)).map((r) => ({ ...r, relatedIds: r.relatedIds.filter((rid) => rid !== id) }));
+    setRecipes((prev) => prev.filter((r) => r.id !== id).map((r) => linkedBack.find((u) => u.id === r.id) || r));
+    try {
+      await window.storage.delete(`recipe:${id}`, false);
+      await Promise.all(linkedBack.map((r) => persistRecipe(r)));
+    } catch (e) { console.error(e); }
+    setConfirmDelete(null);
+    if (view.type === "recipe" && view.id === id) setView({ type: "home" });
+  };
+
+  const deleteMemberNow = async (id) => {
+    const linkedRecipeIds = recipes.filter((r) => r.memberId === id).map((r) => r.id);
+    setMembers((prev) => prev.filter((m) => m.id !== id));
+    setRecipes((prev) => prev.filter((r) => r.memberId !== id));
+    try {
+      await window.storage.delete(`member:${id}`, false);
+      await Promise.all(linkedRecipeIds.map((rid) => window.storage.delete(`recipe:${rid}`, false).catch(() => {})));
+    } catch (e) { console.error(e); }
+    setConfirmDelete(null);
+    if (view.type === "member" && view.id === id) setView({ type: "home" });
+  };
+
+  const memberById = (id) => members.find((m) => m.id === id);
+  const categories = Array.from(new Set(recipes.map((r) => r.category).filter(Boolean)));
+
+  const q = query.trim().toLowerCase();
+  const filteredRecipes = recipes.filter((r) => {
+    if (filterMember && r.memberId !== filterMember) return false;
+    if (filterCategory && r.category !== filterCategory) return false;
+    if (filterFavorites && !r.favorite) return false;
+    if (!q) return true;
+    const m = memberById(r.memberId);
+    const haystack = [r.name, r.category, r.notes, m?.name, ...(r.tags || []), ...(r.ingredients || []), ...(r.directions || [])].join(" ").toLowerCase();
+    return haystack.includes(q);
+  });
+
+  const activeRecipe = view.type === "recipe" ? recipes.find((r) => r.id === view.id) : null;
+  const activeMember = view.type === "member" ? memberById(view.id) : null;
+
+  const Header = (
+    <div className="sticky top-0 z-20 no-print" style={{ background: T.paper, borderBottom: `1px solid ${T.lineSoft}` }}>
+      <div className="max-w-5xl mx-auto px-4 pt-5 pb-3">
+        <button className="flex items-center gap-2 mb-4" onClick={() => setView({ type: "home" })}>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: T.pine }}>
+            <BookOpen size={16} color="#fff" />
+          </div>
+          <div style={{ ...displayFont, fontWeight: 700, fontSize: 21, color: T.ink }}>The Family Recipe Box</div>
+        </button>
+        <div className="relative">
+          <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+            <Search size={16} color={T.inkFaint} />
+          </div>
+          <input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); if (view.type !== "home") setView({ type: "home" }); }}
+            placeholder="Search recipes, ingredients, tags, family members…"
+            style={{ ...bodyFont, width: "100%", padding: "11px 14px 11px 40px", borderRadius: 999, border: `1px solid ${T.line}`, background: "#fff", fontSize: 14.5, outline: "none" }}
+          />
+          {query && (
+            <button onClick={() => setQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+              <X size={15} color={T.inkFaint} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const Home = (
+    <div className="max-w-5xl mx-auto px-4 pb-24">
+      {!q && (
+        <>
+          <div className="flex items-center justify-between mt-6 mb-3">
+            <div style={{ ...displayFont, fontWeight: 600, fontSize: 18, color: T.ink }}>Browse by Family Member</div>
+            <GhostButton onClick={() => setShowAddMember(true)}><Plus size={13} /> Add family member</GhostButton>
+          </div>
+
+          {members.length === 0 ? (
+            <div className="rounded-2xl mb-6" style={{ background: T.card, border: `1px dashed ${T.line}` }}>
+              <EmptyState icon={<Users size={22} color={T.pine} />} title="No family members yet" subtitle="Add grandma, mom, or anyone whose recipes you want to preserve." />
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-3 mb-6 -mx-1 px-1">
+              {members.map((m) => {
+                const count = recipes.filter((r) => r.memberId === m.id).length;
+                return (
+                  <button key={m.id} onClick={() => setView({ type: "member", id: m.id })} className="flex flex-col items-center flex-shrink-0 w-24">
+                    <div className="w-20 h-20 rounded-full overflow-hidden mb-2" style={{ background: T.paperTexture, border: `2px solid #fff`, boxShadow: "0 3px 10px rgba(43,36,24,0.15)" }}>
+                      {m.photo ? <img src={m.photo} alt="" className="w-full h-full object-cover" /> : (
+                        <div className="w-full h-full flex items-center justify-center"><Users size={18} color={T.inkFaint} /></div>
+                      )}
+                    </div>
+                    <div style={{ ...displayFont, fontWeight: 600, fontSize: 12.5, color: T.ink, textAlign: "center" }} className="truncate w-full">{m.name}</div>
+                    <div style={{ ...monoFont, fontSize: 10, color: T.inkSoft }}>{count} recipe{count !== 1 ? "s" : ""}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-2">
+        <Chip active={!filterMember && !filterCategory && !filterFavorites} onClick={() => { setFilterMember(""); setFilterCategory(""); setFilterFavorites(false); }}>All</Chip>
+        {categories.map((c) => (
+          <Chip key={c} active={filterCategory === c} onClick={() => setFilterCategory(filterCategory === c ? "" : c)}>{c}</Chip>
+        ))}
+        <Chip active={filterFavorites} onClick={() => setFilterFavorites((v) => !v)} color={T.brick}>♥ Favorites</Chip>
+      </div>
+
+      {members.length > 0 && (
+        <div className="mb-4">
+          <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} style={{ ...monoFont, fontSize: 12, color: T.inkSoft, padding: "6px 10px", borderRadius: 8, border: `1px solid ${T.line}`, background: "#fff" }}>
+            <option value="">Filter by family member…</option>
+            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-3">
+        <div style={{ ...displayFont, fontWeight: 600, fontSize: 18, color: T.ink }}>
+          {q ? `Search results for “${query}”` : "Recipe Library"}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setViewMode("grid")} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: viewMode === "grid" ? T.pine : "transparent", color: viewMode === "grid" ? "#fff" : T.inkSoft }}>
+            <LayoutGrid size={14} />
+          </button>
+          <button onClick={() => setViewMode("list")} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: viewMode === "list" ? T.pine : "transparent", color: viewMode === "list" ? "#fff" : T.inkSoft }}>
+            <ListIcon size={14} />
+          </button>
+          <PrimaryButton onClick={() => setShowAddRecipe(true)} style={{ padding: "8px 16px", fontSize: 13 }}>
+            <Plus size={14} /> Add recipe
+          </PrimaryButton>
+        </div>
+      </div>
+
+      {filteredRecipes.length === 0 ? (
+        <EmptyState
+          icon={<Search size={20} color={T.pine} />}
+          title={recipes.length === 0 ? "Your recipe box is empty" : "No recipes match"}
+          subtitle={recipes.length === 0 ? "Add your first recipe to start building the family archive." : "Try a different search term or clear your filters."}
+        />
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {filteredRecipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} member={memberById(r.memberId)} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="grid" />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {filteredRecipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} member={memberById(r.memberId)} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="list" />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen w-full" style={{ background: T.paper, backgroundImage: `repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(201,186,149,0.35) 28px)`, ...bodyFont }}>
+      {Header}
+
+      {loading ? (
+        <div className="max-w-5xl mx-auto px-4 py-24 text-center" style={{ ...monoFont, color: T.inkSoft, fontSize: 13 }}>Opening the recipe box…</div>
+      ) : view.type === "recipe" && activeRecipe ? (
+        <RecipeDetail
+          recipe={activeRecipe}
+          member={memberById(activeRecipe.memberId)}
+          allRecipes={recipes}
+          onBack={() => setView({ type: "home" })}
+          onEdit={(r) => setEditingRecipe(r)}
+          onDelete={(id) => setConfirmDelete({ kind: "recipe", id, text: `Delete “${activeRecipe.name}”? This can't be undone.` })}
+          onToggleFavorite={toggleFavorite}
+          onOpenArchive={setArchiveRecipe}
+          onOpenMember={(id) => setView({ type: "member", id })}
+          onOpenRecipe={(id) => setView({ type: "recipe", id })}
+        />
+      ) : view.type === "member" && activeMember ? (
+        <MemberDetail
+          member={activeMember}
+          recipes={recipes.filter((r) => r.memberId === activeMember.id)}
+          onBack={() => setView({ type: "home" })}
+          onEdit={(m) => setEditingMember(m)}
+          onDelete={(id) => setConfirmDelete({ kind: "member", id, text: `Delete ${activeMember.name} and all ${recipes.filter((r) => r.memberId === id).length} of their recipes? This can't be undone.` })}
+          onOpenRecipe={(id) => setView({ type: "recipe", id })}
+          onToggleFavorite={toggleFavorite}
+          onOpenArchive={setArchiveRecipe}
+          onAddRecipe={() => setShowAddRecipe(true)}
+        />
+      ) : (
+        Home
+      )}
+
+      {showAddMember && <MemberFormModal onClose={() => setShowAddMember(false)} onSave={saveMember} />}
+      {editingMember && <MemberFormModal initial={editingMember} onClose={() => setEditingMember(null)} onSave={saveMember} />}
+
+      {showAddRecipe && (
+        <RecipeFormModal
+          members={members}
+          categories={categories}
+          recipes={recipes}
+          defaultMemberId={view.type === "member" ? view.id : ""}
+          onClose={() => setShowAddRecipe(false)}
+          onSave={saveRecipe}
+        />
+      )}
+      {editingRecipe && (
+        <RecipeFormModal initial={editingRecipe} members={members} categories={categories} recipes={recipes} onClose={() => setEditingRecipe(null)} onSave={saveRecipe} />
+      )}
+
+      {archiveRecipe && <ArchiveLightbox recipe={archiveRecipe} onClose={() => setArchiveRecipe(null)} />}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          text={confirmDelete.text}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => (confirmDelete.kind === "recipe" ? deleteRecipeNow(confirmDelete.id) : deleteMemberNow(confirmDelete.id))}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
