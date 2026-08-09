@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.0/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   /* Base reset */
   html, body, #root { height: 100%; }
@@ -237,35 +238,42 @@ const { useState, useEffect, useRef, useCallback } = React;
 /*  window.storage is already present (e.g. running inside a Claude        */
 /*  artifact), it's left untouched and used instead.                       */
 /* ---------------------------------------------------------------------- */
-if (!window.storage) {
-  const LS_PREFIX = "family-recipe-box::";
-  const nsKey = (key, shared) => `${LS_PREFIX}${shared ? "shared" : "priv"}::${key}`;
-  window.storage = {
-    async get(key, shared = false) {
-      const raw = localStorage.getItem(nsKey(key, shared));
-      if (raw === null) throw new Error(`Key not found: ${key}`);
-      return { key, value: raw, shared: !!shared };
-    },
-    async set(key, value, shared = false) {
-      localStorage.setItem(nsKey(key, shared), value);
-      return { key, value, shared: !!shared };
-    },
-    async delete(key, shared = false) {
-      localStorage.removeItem(nsKey(key, shared));
-      return { key, deleted: true, shared: !!shared };
-    },
-    async list(prefix = "", shared = false) {
-      const nsPrefix = nsKey(prefix, shared);
-      const base = `${LS_PREFIX}${shared ? "shared" : "priv"}::`;
-      const keys = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith(nsPrefix)) keys.push(k.slice(base.length));
-      }
-      return { keys, prefix, shared: !!shared };
-    },
-  };
-}
+/* ---------------------------------------------------------------------- */
+/*  Supabase-backed window.storage                                         */
+/*  Data now lives in a shared cloud database instead of the browser's     */
+/*  local storage, so every family member who logs in sees the same       */
+/*  recipes on every device.                                               */
+/* ---------------------------------------------------------------------- */
+const SUPABASE_URL = "https://aivjtidstcapgzwyjcke.supabase.co";
+const SUPABASE_KEY = "sb_publishable_2ZhY_DuziybK47Wrp2kyTA__B8z-Rrj";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+window.storage = {
+  async get(key, shared = true) {
+    const { data, error } = await supabaseClient.from("kv_store").select("value").eq("key", key).eq("shared", shared).maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error(`Key not found: ${key}`);
+    return { key, value: data.value, shared: !!shared };
+  },
+  async set(key, value, shared = true) {
+    const { data: userData } = await supabaseClient.auth.getUser();
+    const { error } = await supabaseClient
+      .from("kv_store")
+      .upsert({ key, value, shared, owner: userData?.user?.id, updated_at: new Date().toISOString() }, { onConflict: "key,shared" });
+    if (error) throw error;
+    return { key, value, shared: !!shared };
+  },
+  async delete(key, shared = true) {
+    const { error } = await supabaseClient.from("kv_store").delete().eq("key", key).eq("shared", shared);
+    if (error) throw error;
+    return { key, deleted: true, shared: !!shared };
+  },
+  async list(prefix = "", shared = true) {
+    const { data, error } = await supabaseClient.from("kv_store").select("key").eq("shared", shared).like("key", `${prefix}%`);
+    if (error) throw error;
+    return { keys: (data || []).map((r) => r.key), prefix, shared: !!shared };
+  },
+};
 
 /* ---------------------------------------------------------------------- */
 /*  Minimal inline icon set (lucide-style, stroke-based)                   */
@@ -454,11 +462,11 @@ function compressImageFile(file, maxDim = 1100, quality = 0.72) {
 async function storageGetAll(prefix) {
   const out = [];
   try {
-    const listed = await window.storage.list(prefix, false);
+    const listed = await window.storage.list(prefix, true);
     if (listed && listed.keys) {
       for (const k of listed.keys) {
         try {
-          const r = await window.storage.get(k, false);
+          const r = await window.storage.get(k, true);
           if (r && r.value) out.push(JSON.parse(r.value));
         } catch (e) { /* skip unreadable entry */ }
       }
@@ -1251,6 +1259,77 @@ function MemberDetail({ member, recipes, onBack, onEdit, onDelete, onOpenRecipe,
 /* ---------------------------------------------------------------------- */
 /*  Main App                                                               */
 /* ---------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------- */
+/*  Auth gate — simple email/password login, shared by the whole family    */
+/* ---------------------------------------------------------------------- */
+function AuthGate({ children }) {
+  const [session, setSession] = useState(undefined); // undefined = loading, null = signed out
+  const [mode, setMode] = useState("signin"); // "signin" | "signup"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    supabaseClient.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabaseClient.auth.onAuthStateChange((_event, sess) => setSession(sess));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    setBusy(true);
+    try {
+      if (mode === "signin") {
+        const { error: err } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (err) throw err;
+      } else {
+        const { error: err } = await supabaseClient.auth.signUp({ email, password });
+        if (err) throw err;
+        setInfo("Account created! If email confirmation is on, check your inbox — otherwise you're signed in.");
+      }
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (session === undefined) {
+    return <div className="min-h-screen flex items-center justify-center" style={{ background: T.paperTexture, ...monoFont, color: T.inkSoft, fontSize: 13 }}>Loading…</div>;
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: T.paperTexture }}>
+        <form onSubmit={submit} className="w-full max-w-sm p-7 rounded-2xl" style={{ background: T.card, border: `1px solid ${T.line}` }}>
+          <div style={{ ...displayFont, fontWeight: 700, fontSize: 24, color: T.ink }} className="mb-1">Family Recipe Box</div>
+          <div style={{ ...bodyFont, fontSize: 13.5, color: T.inkSoft }} className="mb-5">
+            {mode === "signin" ? "Sign in to see the family recipes." : "Create an account to join the family recipe box."}
+          </div>
+          <div className="flex flex-col gap-3">
+            <input type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} autoComplete="email" />
+            <input type="password" required placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={6} />
+          </div>
+          {error && <div style={{ ...monoFont, fontSize: 12, color: T.brick }} className="mt-3">{error}</div>}
+          {info && <div style={{ ...monoFont, fontSize: 12, color: T.pine }} className="mt-3">{info}</div>}
+          <button type="submit" disabled={busy} className="w-full mt-5 py-2.5 rounded-xl" style={{ background: T.pine, color: "#fff", ...monoFont, fontSize: 13 }}>
+            {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+          </button>
+          <button type="button" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setInfo(""); }} className="w-full mt-3" style={{ ...monoFont, fontSize: 12, color: T.inkSoft, textDecoration: "underline" }}>
+            {mode === "signin" ? "New to the family? Create an account" : "Already have an account? Sign in"}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  return children(session);
+}
+
 function App() {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
@@ -1281,11 +1360,11 @@ function App() {
   }, []);
 
   const persistMember = useCallback(async (member) => {
-    try { await window.storage.set(`member:${member.id}`, JSON.stringify(member), false); }
+    try { await window.storage.set(`member:${member.id}`, JSON.stringify(member), true); }
     catch (e) { console.error("Failed to save family member", e); }
   }, []);
   const persistRecipe = useCallback(async (recipe) => {
-    try { await window.storage.set(`recipe:${recipe.id}`, JSON.stringify(recipe), false); }
+    try { await window.storage.set(`recipe:${recipe.id}`, JSON.stringify(recipe), true); }
     catch (e) { console.error("Failed to save recipe", e); }
   }, []);
 
@@ -1346,7 +1425,7 @@ function App() {
     const linkedBack = recipes.filter((r) => (r.relatedIds || []).includes(id)).map((r) => ({ ...r, relatedIds: r.relatedIds.filter((rid) => rid !== id) }));
     setRecipes((prev) => prev.filter((r) => r.id !== id).map((r) => linkedBack.find((u) => u.id === r.id) || r));
     try {
-      await window.storage.delete(`recipe:${id}`, false);
+      await window.storage.delete(`recipe:${id}`, true);
       await Promise.all(linkedBack.map((r) => persistRecipe(r)));
     } catch (e) { console.error(e); }
     setConfirmDelete(null);
@@ -1358,8 +1437,8 @@ function App() {
     setMembers((prev) => prev.filter((m) => m.id !== id));
     setRecipes((prev) => prev.filter((r) => r.memberId !== id));
     try {
-      await window.storage.delete(`member:${id}`, false);
-      await Promise.all(linkedRecipeIds.map((rid) => window.storage.delete(`recipe:${rid}`, false).catch(() => {})));
+      await window.storage.delete(`member:${id}`, true);
+      await Promise.all(linkedRecipeIds.map((rid) => window.storage.delete(`recipe:${rid}`, true).catch(() => {})));
     } catch (e) { console.error(e); }
     setConfirmDelete(null);
     if (view.type === "member" && view.id === id) setView({ type: "home" });
@@ -1384,12 +1463,18 @@ function App() {
 
   const Header = (
     <div className="sticky top-0 z-20 no-print" style={{ background: T.paper, borderBottom: `1px solid ${T.lineSoft}` }}>
-      <div className="max-w-5xl mx-auto px-4 pt-5 pb-3">
+      <div className="max-w-5xl mx-auto px-4 pt-5 pb-3" style={{ position: "relative" }}>
         <button className="flex items-center gap-2 mb-4" onClick={() => setView({ type: "home" })}>
           <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: T.pine }}>
             <BookOpen size={16} color="#fff" />
           </div>
           <div style={{ ...displayFont, fontWeight: 700, fontSize: 21, color: T.ink }}>The Family Recipe Box</div>
+        </button>
+        <button
+          onClick={() => supabaseClient.auth.signOut()}
+          style={{ position: "absolute", right: 16, top: 20, ...monoFont, fontSize: 11.5, color: T.inkSoft, textDecoration: "underline" }}
+        >
+          Sign out
         </button>
         <div className="relative">
           <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
@@ -1566,7 +1651,7 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<AuthGate>{() => <App />}</AuthGate>);
 </script>
 </body>
 </html>
