@@ -230,8 +230,9 @@
     }
     .cookbook-member-section { page-break-before: always; }
     .cookbook-member-section:first-child { page-break-before: avoid; }
-    .cookbook-recipe { page-break-inside: avoid; break-inside: avoid; }
+    .cookbook-recipe-title { page-break-after: avoid; break-after: avoid; }
     .cookbook-category-heading { page-break-after: avoid; break-after: avoid; }
+    .cookbook-recipe p, .cookbook-recipe li { orphans: 2; widows: 2; }
     .cookbook-toc { page-break-before: always; page-break-after: always; }
   }
 </style>
@@ -1513,7 +1514,7 @@ function CookbookExport({ recipes, members, onBack }) {
               </div>
               {section.recipes.map((recipe) => (
                 <div key={recipe.id} className="cookbook-recipe mb-8 pb-6" style={{ borderBottom: `1px dashed ${T.lineSoft}` }}>
-                  <div style={{ ...displayFont, fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 2 }}>{recipe.name}</div>
+                  <div className="cookbook-recipe-title" style={{ ...displayFont, fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 2 }}>{recipe.name}</div>
                   {recipe.tags?.length > 0 && (
                     <div style={{ ...monoFont, fontSize: 10.5, color: T.inkSoft, marginBottom: 8 }}>{recipe.tags.map((t) => `#${t}`).join("  ")}</div>
                   )}
