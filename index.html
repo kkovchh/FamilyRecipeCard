@@ -223,6 +223,8 @@
     .cookbook-member-section { page-break-before: always; }
     .cookbook-member-section:first-child { page-break-before: avoid; }
     .cookbook-recipe { page-break-inside: avoid; break-inside: avoid; }
+    .cookbook-category-heading { page-break-after: avoid; break-after: avoid; }
+    .cookbook-toc { page-break-after: always; }
   }
 </style>
 </head>
@@ -1460,6 +1462,29 @@ function CookbookExport({ recipes, members, onBack }) {
         <div style={{ ...monoFont, fontSize: 12, color: T.inkSoft, marginTop: 8 }}>{recipes.length} recipe{recipes.length === 1 ? "" : "s"} · printed {formatDate(new Date().toISOString())}</div>
       </div>
 
+      {groups.length > 0 && (
+        <div className="cookbook-toc mb-10">
+          <Eyebrow style={{ marginBottom: 14 }}>Table of Contents</Eyebrow>
+          <div className="flex flex-col gap-5">
+            {groups.map(({ member, recipes: memberRecipes }) => (
+              <div key={member?.id || "unassigned"}>
+                <div style={{ ...displayFont, fontWeight: 700, fontSize: 15, color: T.ink, marginBottom: 4 }}>
+                  {member ? `${member.name}'s Recipe Box` : "Family Recipes"}
+                </div>
+                <div className="flex flex-col gap-1">
+                  {byCategoryThenName(memberRecipes).map((section) => (
+                    <div key={section.category} className="flex items-baseline gap-2" style={{ ...bodyFont, fontSize: 13, color: T.inkSoft }}>
+                      <span style={{ ...monoFont, fontSize: 10.5, color: T.pine, textTransform: "uppercase", letterSpacing: "0.05em", minWidth: 90 }}>{section.category}</span>
+                      <span>{section.recipes.map((r) => r.name).join(", ")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {groups.length === 0 && (
         <div style={{ ...bodyFont, fontSize: 14, color: T.inkSoft }} className="text-center">No recipes yet.</div>
       )}
@@ -1475,7 +1500,7 @@ function CookbookExport({ recipes, members, onBack }) {
 
           {byCategoryThenName(memberRecipes).map((section) => (
             <div key={section.category} className="mb-6">
-              <div style={{ ...displayFont, fontWeight: 700, fontSize: 12, color: T.pine, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+              <div className="cookbook-category-heading" style={{ ...displayFont, fontWeight: 700, fontSize: 12, color: T.pine, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
                 {section.category}
               </div>
               {section.recipes.map((recipe) => (
