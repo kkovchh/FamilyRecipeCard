@@ -230,9 +230,9 @@
     }
     .cookbook-member-section { page-break-before: always; }
     .cookbook-member-section:first-child { page-break-before: avoid; }
+    .cookbook-recipe { page-break-inside: avoid; break-inside: avoid; }
     .cookbook-recipe-title { page-break-after: avoid; break-after: avoid; }
     .cookbook-category-heading { page-break-after: avoid; break-after: avoid; }
-    .cookbook-recipe p, .cookbook-recipe li { orphans: 2; widows: 2; }
     .cookbook-toc { page-break-before: always; page-break-after: always; }
   }
 </style>
@@ -1513,18 +1513,18 @@ function CookbookExport({ recipes, members, onBack }) {
                 {section.category}
               </div>
               {section.recipes.map((recipe) => (
-                <div key={recipe.id} className="cookbook-recipe mb-8 pb-6" style={{ borderBottom: `1px dashed ${T.lineSoft}` }}>
-                  <div className="cookbook-recipe-title" style={{ ...displayFont, fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 2 }}>{recipe.name}</div>
+                <div key={recipe.id} className="cookbook-recipe mb-5 pb-4" style={{ borderBottom: `1px dashed ${T.lineSoft}` }}>
+                  <div className="cookbook-recipe-title" style={{ ...displayFont, fontWeight: 700, fontSize: 16, color: T.ink, marginBottom: 1 }}>{recipe.name}</div>
                   {recipe.tags?.length > 0 && (
-                    <div style={{ ...monoFont, fontSize: 10.5, color: T.inkSoft, marginBottom: 8 }}>{recipe.tags.map((t) => `#${t}`).join("  ")}</div>
+                    <div style={{ ...monoFont, fontSize: 9.5, color: T.inkSoft, marginBottom: 6 }}>{recipe.tags.map((t) => `#${t}`).join("  ")}</div>
                   )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="flex flex-col gap-2">
                     {recipe.ingredients?.length > 0 && (
                       <div>
-                        <Eyebrow style={{ marginBottom: 6 }}>Ingredients</Eyebrow>
-                        <ul style={{ ...bodyFont, fontSize: 13, color: T.ink }} className="space-y-1">
+                        <Eyebrow style={{ marginBottom: 4 }}>Ingredients</Eyebrow>
+                        <ul style={{ ...bodyFont, fontSize: 11.5, color: T.ink, lineHeight: 1.35 }} className="space-y-0.5">
                           {recipe.ingredients.map((ing, i) => (
-                            <li key={i} className="flex gap-2">
+                            <li key={i} className="flex gap-1.5">
                               <span style={{ color: T.gold }}>•</span><span>{ing}</span>
                             </li>
                           ))}
@@ -1533,11 +1533,11 @@ function CookbookExport({ recipes, members, onBack }) {
                     )}
                     {recipe.directions?.length > 0 && (
                       <div>
-                        <Eyebrow style={{ marginBottom: 6 }}>Directions</Eyebrow>
-                        <ol style={{ ...bodyFont, fontSize: 13, color: T.ink }} className="space-y-1">
+                        <Eyebrow style={{ marginBottom: 4 }}>Directions</Eyebrow>
+                        <ol style={{ ...bodyFont, fontSize: 11.5, color: T.ink, lineHeight: 1.35 }} className="space-y-0.5">
                           {recipe.directions.map((step, i) => (
-                            <li key={i} className="flex gap-2">
-                              <span style={{ ...displayFont, fontWeight: 700, color: T.pine, minWidth: 16 }}>{i + 1}.</span><span>{step}</span>
+                            <li key={i} className="flex gap-1.5">
+                              <span style={{ ...displayFont, fontWeight: 700, color: T.pine, minWidth: 14 }}>{i + 1}.</span><span>{step}</span>
                             </li>
                           ))}
                         </ol>
@@ -1545,7 +1545,7 @@ function CookbookExport({ recipes, members, onBack }) {
                     )}
                   </div>
                   {recipe.notes && (
-                    <div style={{ ...bodyFont, fontStyle: "italic", fontSize: 12, color: T.inkSoft, marginTop: 8 }}>{recipe.notes}</div>
+                    <div style={{ ...bodyFont, fontStyle: "italic", fontSize: 10.5, color: T.inkSoft, marginTop: 6 }}>{recipe.notes}</div>
                   )}
                 </div>
               ))}
