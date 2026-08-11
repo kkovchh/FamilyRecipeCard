@@ -219,7 +219,15 @@
     }
     .ing-bullet { display: none !important; }
     .ing-row { padding-left: 2em; }
-    @page { margin: 0.6in; }
+    @page {
+      margin: 0.6in 0.6in 0.75in 0.6in;
+      @bottom-center {
+        content: counter(page) " / " counter(pages);
+        font-family: 'Courier Prime', monospace;
+        font-size: 9pt;
+        color: #8a7c5c;
+      }
+    }
     .cookbook-member-section { page-break-before: always; }
     .cookbook-member-section:first-child { page-break-before: avoid; }
     .cookbook-recipe { page-break-inside: avoid; break-inside: avoid; }
