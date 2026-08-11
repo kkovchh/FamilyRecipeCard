@@ -220,6 +220,9 @@
     .ing-bullet { display: none !important; }
     .ing-row { padding-left: 2em; }
     @page { margin: 0.6in; }
+    .cookbook-member-section { page-break-before: always; }
+    .cookbook-member-section:first-child { page-break-before: avoid; }
+    .cookbook-recipe { page-break-inside: avoid; break-inside: avoid; }
   }
 </style>
 </head>
@@ -310,6 +313,7 @@ const Heart = ({ size = 20, color = "currentColor", fill = "none" }) => (
 );
 const Printer = (p) => <Ico {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></Ico>;
 const Share2 = (p) => <Ico {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></Ico>;
+const Dice = (p) => <Ico {...p}><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></Ico>;
 
 /* ---------------------------------------------------------------------- */
 /*  Theme                                                                  */
@@ -374,6 +378,19 @@ function formatDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function triggerPrint() {
+  const originalTitle = document.title;
+  document.title = " ";
+  const restore = () => {
+    document.title = originalTitle;
+    window.removeEventListener("afterprint", restore);
+  };
+  window.addEventListener("afterprint", restore);
+  // Fallback in case afterprint doesn't fire (some older/mobile browsers)
+  setTimeout(restore, 3000);
+  window.print();
 }
 
 function recipeToText(recipe, member) {
@@ -789,16 +806,16 @@ function MemberFormModal({ initial, onClose, onSave }) {
       </div>
 
       <Field label="Name *">
-        <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="Grandma Mary" />
+        <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="Mary" />
       </Field>
       <Field label="Nickname (optional)">
-        <input style={inputStyle} value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Gigi" />
+        <input style={inputStyle} value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="" />
       </Field>
       <Field label="Relationship (optional)">
         <input style={inputStyle} value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="Grandma, Mom, Aunt, Grandpa…" />
       </Field>
       <Field label="Short description or memories (optional)">
-        <textarea style={{ ...inputStyle, minHeight: 80 }} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Always made Sunday dinner for the whole family…" />
+        <textarea style={{ ...inputStyle, minHeight: 80 }} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Always made the best pumpkin pie…" />
       </Field>
 
       <PrimaryButton
@@ -1034,18 +1051,7 @@ function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, on
     setTimeout(() => setToast(""), 2200);
   };
 
-  const handlePrint = () => {
-    const originalTitle = document.title;
-    document.title = " ";
-    const restore = () => {
-      document.title = originalTitle;
-      window.removeEventListener("afterprint", restore);
-    };
-    window.addEventListener("afterprint", restore);
-    // Fallback in case afterprint doesn't fire (some older/mobile browsers)
-    setTimeout(restore, 3000);
-    window.print();
-  };
+  const handlePrint = triggerPrint;
 
   const handleShare = async () => {
     const text = recipeToText(recipe, member);
@@ -1267,6 +1273,7 @@ function AuthGate({ children }) {
   const [mode, setMode] = useState("signin"); // "signin" | "signup"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1299,35 +1306,270 @@ function AuthGate({ children }) {
   };
 
   if (session === undefined) {
-    return <div className="min-h-screen flex items-center justify-center" style={{ background: T.paperTexture, ...monoFont, color: T.inkSoft, fontSize: 13 }}>Loading…</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: T.paperTexture, backgroundImage: `repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(180,160,110,0.18) 28px)` }}>
+        <div className="w-9 h-9 rounded-full flex items-center justify-center animate-pulse" style={{ background: T.pine }}>
+          <BookOpen size={16} color="#fff" />
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: T.paperTexture }}>
-        <form onSubmit={submit} className="w-full max-w-sm p-7 rounded-2xl" style={{ background: T.card, border: `1px solid ${T.line}` }}>
-          <div style={{ ...displayFont, fontWeight: 700, fontSize: 24, color: T.ink }} className="mb-1">Family Recipe Box</div>
-          <div style={{ ...bodyFont, fontSize: 13.5, color: T.inkSoft }} className="mb-5">
-            {mode === "signin" ? "Sign in to see the family recipes." : "Create an account to join the family recipe box."}
+      <div className="min-h-screen flex items-center justify-center px-4 py-10" style={{ background: T.paperTexture, backgroundImage: `repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(180,160,110,0.18) 28px)` }}>
+        <form
+          onSubmit={submit}
+          className="w-full max-w-md rounded-2xl overflow-hidden"
+          style={{ background: T.card, border: `1px solid ${T.line}`, boxShadow: "0 12px 32px rgba(43,36,24,0.18)" }}
+        >
+          <div className="flex flex-col items-center text-center pt-9 pb-6 px-9" style={{ borderBottom: `1px dashed ${T.line}` }}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: T.pine }}>
+              <BookOpen size={22} color="#fff" />
+            </div>
+            <div style={{ ...displayFont, fontWeight: 700, fontSize: 23, color: T.ink, lineHeight: 1.2 }}>The Family Recipe Box</div>
+            <div style={{ ...bodyFont, fontSize: 13.5, color: T.inkSoft, marginTop: 6 }}>
+              {mode === "signin" ? "Sign in to see the family recipes." : "Create an account to join the family recipe box."}
+            </div>
           </div>
-          <div className="flex flex-col gap-3">
-            <input type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} autoComplete="email" />
-            <input type="password" required placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={6} />
+
+          <div className="px-9 pt-6 pb-7">
+            <div className="flex flex-col gap-4">
+              <Field label="Email">
+                <input
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={inputStyle}
+                  autoComplete="email"
+                  autoFocus
+                />
+              </Field>
+              <Field label="Password">
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder={mode === "signin" ? "Your password" : "At least 6 characters"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ ...inputStyle, paddingRight: 40 }}
+                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                    style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", ...monoFont, fontSize: 10.5, color: T.inkSoft, textTransform: "uppercase", letterSpacing: "0.04em" }}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </Field>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2 mt-4 p-3 rounded-xl" style={{ background: "rgba(147,64,44,0.08)", border: `1px solid rgba(147,64,44,0.25)` }}>
+                <Info size={14} color={T.brick} style={{ marginTop: 1, flexShrink: 0 }} />
+                <div style={{ ...bodyFont, fontSize: 13, color: T.brick, lineHeight: 1.4 }}>{error}</div>
+              </div>
+            )}
+            {info && (
+              <div className="flex items-start gap-2 mt-4 p-3 rounded-xl" style={{ background: "rgba(47,75,60,0.08)", border: `1px solid rgba(47,75,60,0.2)` }}>
+                <Check size={14} color={T.pine} style={{ marginTop: 1, flexShrink: 0 }} />
+                <div style={{ ...bodyFont, fontSize: 13, color: T.pine, lineHeight: 1.4 }}>{info}</div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full mt-6 py-3 rounded-xl transition-opacity"
+              style={{ background: T.pine, color: "#fff", ...monoFont, fontSize: 13, letterSpacing: "0.03em", opacity: busy ? 0.7 : 1 }}
+            >
+              {busy ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setInfo(""); }}
+              className="w-full mt-4 py-1"
+              style={{ ...monoFont, fontSize: 12, color: T.inkSoft }}
+            >
+              {mode === "signin" ? (
+                <>New to the family? <span style={{ color: T.pine, textDecoration: "underline" }}>Create an account</span></>
+              ) : (
+                <>Already have an account? <span style={{ color: T.pine, textDecoration: "underline" }}>Sign in</span></>
+              )}
+            </button>
           </div>
-          {error && <div style={{ ...monoFont, fontSize: 12, color: T.brick }} className="mt-3">{error}</div>}
-          {info && <div style={{ ...monoFont, fontSize: 12, color: T.pine }} className="mt-3">{info}</div>}
-          <button type="submit" disabled={busy} className="w-full mt-5 py-2.5 rounded-xl" style={{ background: T.pine, color: "#fff", ...monoFont, fontSize: 13 }}>
-            {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
-          </button>
-          <button type="button" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setInfo(""); }} className="w-full mt-3" style={{ ...monoFont, fontSize: 12, color: T.inkSoft, textDecoration: "underline" }}>
-            {mode === "signin" ? "New to the family? Create an account" : "Already have an account? Sign in"}
-          </button>
         </form>
       </div>
     );
   }
 
   return children(session);
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Cookbook export — a printable view of every recipe, grouped by family  */
+/*  member and sorted by category within each member's section. Uses the  */
+/*  same print stylesheet as the single-recipe print/PDF flow.             */
+/* ---------------------------------------------------------------------- */
+function CookbookExport({ recipes, members, onBack }) {
+  const memberById = (id) => members.find((m) => m.id === id);
+
+  const groups = [];
+  const sortedMembers = [...members].sort((a, b) => a.name.localeCompare(b.name));
+  for (const member of sortedMembers) {
+    const memberRecipes = recipes.filter((r) => r.memberId === member.id);
+    if (memberRecipes.length > 0) groups.push({ member, recipes: memberRecipes });
+  }
+  const unassigned = recipes.filter((r) => !memberById(r.memberId));
+  if (unassigned.length > 0) groups.push({ member: null, recipes: unassigned });
+
+  const byCategoryThenName = (list) => {
+    const sorted = [...list].sort((a, b) => {
+      const catA = a.category || "Uncategorized";
+      const catB = b.category || "Uncategorized";
+      if (catA !== catB) return catA.localeCompare(catB);
+      return a.name.localeCompare(b.name);
+    });
+    const sections = [];
+    for (const r of sorted) {
+      const cat = r.category || "Uncategorized";
+      const last = sections[sections.length - 1];
+      if (last && last.category === cat) last.recipes.push(r);
+      else sections.push({ category: cat, recipes: [r] });
+    }
+    return sections;
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 pb-24">
+      <div className="flex items-center justify-between pt-5 pb-4 no-print">
+        <IconButton onClick={onBack} title="Back"><ArrowLeft size={17} /></IconButton>
+        <IconButton onClick={triggerPrint} title="Print / Save as PDF"><Printer size={15} /></IconButton>
+      </div>
+
+      <div className="text-center mb-10" style={{ paddingTop: 20 }}>
+        <Eyebrow style={{ justifyContent: "center", display: "flex" }}>A collection of family recipes</Eyebrow>
+        <div style={{ ...displayFont, fontWeight: 700, fontSize: 34, color: T.ink, marginTop: 6 }}>The Family Recipe Box</div>
+        <div style={{ ...monoFont, fontSize: 12, color: T.inkSoft, marginTop: 8 }}>{recipes.length} recipe{recipes.length === 1 ? "" : "s"} · printed {formatDate(new Date().toISOString())}</div>
+      </div>
+
+      {groups.length === 0 && (
+        <div style={{ ...bodyFont, fontSize: 14, color: T.inkSoft }} className="text-center">No recipes yet.</div>
+      )}
+
+      {groups.map(({ member, recipes: memberRecipes }, gi) => (
+        <div key={member?.id || "unassigned"} className="cookbook-member-section mb-10">
+          <div className="flex items-center gap-3 mb-6" style={{ borderBottom: `2px solid ${T.pine}`, paddingBottom: 10 }}>
+            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: T.paperTexture }}>
+              {member?.photo ? <img src={member.photo} alt="" className="w-full h-full object-cover recipe-photo" /> : <Users size={15} color={T.inkFaint} />}
+            </div>
+            <div style={{ ...displayFont, fontWeight: 700, fontSize: 22, color: T.ink }}>{member ? `${member.name}'s Recipe Box` : "Family Recipes"}</div>
+          </div>
+
+          {byCategoryThenName(memberRecipes).map((section) => (
+            <div key={section.category} className="mb-6">
+              <div style={{ ...displayFont, fontWeight: 700, fontSize: 12, color: T.pine, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+                {section.category}
+              </div>
+              {section.recipes.map((recipe) => (
+                <div key={recipe.id} className="cookbook-recipe mb-8 pb-6" style={{ borderBottom: `1px dashed ${T.lineSoft}` }}>
+                  <div style={{ ...displayFont, fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 2 }}>{recipe.name}</div>
+                  {recipe.tags?.length > 0 && (
+                    <div style={{ ...monoFont, fontSize: 10.5, color: T.inkSoft, marginBottom: 8 }}>{recipe.tags.map((t) => `#${t}`).join("  ")}</div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                    {recipe.ingredients?.length > 0 && (
+                      <div>
+                        <Eyebrow style={{ marginBottom: 6 }}>Ingredients</Eyebrow>
+                        <ul style={{ ...bodyFont, fontSize: 13, color: T.ink }} className="space-y-1">
+                          {recipe.ingredients.map((ing, i) => (
+                            <li key={i} className="flex gap-2">
+                              <span style={{ color: T.gold }}>•</span><span>{ing}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {recipe.directions?.length > 0 && (
+                      <div>
+                        <Eyebrow style={{ marginBottom: 6 }}>Directions</Eyebrow>
+                        <ol style={{ ...bodyFont, fontSize: 13, color: T.ink }} className="space-y-1">
+                          {recipe.directions.map((step, i) => (
+                            <li key={i} className="flex gap-2">
+                              <span style={{ ...displayFont, fontWeight: 700, color: T.pine, minWidth: 16 }}>{i + 1}.</span><span>{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                  </div>
+                  {recipe.notes && (
+                    <div style={{ ...bodyFont, fontStyle: "italic", fontSize: 12, color: T.inkSoft, marginTop: 8 }}>{recipe.notes}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Surprise Me — random recipe picker, filterable by member and category  */
+/* ---------------------------------------------------------------------- */
+function SurpriseMeModal({ recipes, members, onClose, onPick }) {
+  const [memberId, setMemberId] = useState("");
+  const [category, setCategory] = useState("");
+  const categories = Array.from(new Set(recipes.map((r) => r.category).filter(Boolean))).sort();
+
+  const matching = recipes.filter((r) => {
+    if (memberId && r.memberId !== memberId) return false;
+    if (category && r.category !== category) return false;
+    return true;
+  });
+
+  const pick = () => {
+    if (matching.length === 0) return;
+    const chosen = matching[Math.floor(Math.random() * matching.length)];
+    onPick(chosen.id);
+  };
+
+  return (
+    <ModalShell title="Surprise Me" onClose={onClose}>
+      <Field label="Family member">
+        <select style={inputStyle} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+          <option value="">All family members</option>
+          {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+      </Field>
+      <Field label="Category">
+        <select style={inputStyle} value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option value="">Any category</option>
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Field>
+      <div style={{ ...monoFont, fontSize: 12, color: T.inkSoft, marginBottom: 14 }}>
+        {matching.length === 0 ? "No recipes match that combination." : `${matching.length} recipe${matching.length === 1 ? "" : "s"} to choose from.`}
+      </div>
+      <button
+        onClick={pick}
+        disabled={matching.length === 0}
+        className="w-full py-2.5 rounded-xl flex items-center justify-center gap-2"
+        style={{ background: matching.length === 0 ? T.line : T.pine, color: "#fff", ...monoFont, fontSize: 13 }}
+      >
+        <Dice size={15} /> Pick a recipe
+      </button>
+    </ModalShell>
+  );
 }
 
 function App() {
@@ -1348,6 +1590,7 @@ function App() {
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [archiveRecipe, setArchiveRecipe] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showSurpriseMe, setShowSurpriseMe] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -1453,8 +1696,7 @@ function App() {
     if (filterCategory && r.category !== filterCategory) return false;
     if (filterFavorites && !r.favorite) return false;
     if (!q) return true;
-    const m = memberById(r.memberId);
-    const haystack = [r.name, r.category, r.notes, m?.name, ...(r.tags || []), ...(r.ingredients || []), ...(r.directions || [])].join(" ").toLowerCase();
+    const haystack = [r.name, r.category, ...(r.tags || [])].join(" ").toLowerCase();
     return haystack.includes(q);
   });
 
@@ -1483,7 +1725,7 @@ function App() {
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); if (view.type !== "home") setView({ type: "home" }); }}
-            placeholder="Search recipes, ingredients, tags, family members…"
+            placeholder="Search by recipe name, category, or tag…"
             style={{ ...bodyFont, width: "100%", padding: "11px 14px 11px 40px", borderRadius: 999, border: `1px solid ${T.line}`, background: "#fff", fontSize: 14.5, outline: "none" }}
           />
           {query && (
@@ -1491,6 +1733,22 @@ function App() {
               <X size={15} color={T.inkFaint} />
             </button>
           )}
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={() => setShowSurpriseMe(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+            style={{ background: "#fff", border: `1px solid ${T.line}`, ...monoFont, fontSize: 11.5, color: T.pine }}
+          >
+            <Dice size={13} /> Surprise Me
+          </button>
+          <button
+            onClick={() => setView({ type: "cookbook" })}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+            style={{ background: "#fff", border: `1px solid ${T.line}`, ...monoFont, fontSize: 11.5, color: T.pine }}
+          >
+            <Printer size={13} /> Export All Recipes
+          </button>
         </div>
       </div>
     </div>
@@ -1605,6 +1863,8 @@ function App() {
           onOpenMember={(id) => setView({ type: "member", id })}
           onOpenRecipe={(id) => setView({ type: "recipe", id })}
         />
+      ) : view.type === "cookbook" ? (
+        <CookbookExport recipes={recipes} members={members} onBack={() => setView({ type: "home" })} />
       ) : view.type === "member" && activeMember ? (
         <MemberDetail
           member={activeMember}
@@ -1639,6 +1899,15 @@ function App() {
       )}
 
       {archiveRecipe && <ArchiveLightbox recipe={archiveRecipe} onClose={() => setArchiveRecipe(null)} />}
+
+      {showSurpriseMe && (
+        <SurpriseMeModal
+          recipes={recipes}
+          members={members}
+          onClose={() => setShowSurpriseMe(false)}
+          onPick={(id) => { setShowSurpriseMe(false); setView({ type: "recipe", id }); }}
+        />
+      )}
 
       {confirmDelete && (
         <ConfirmDialog
