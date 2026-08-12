@@ -1690,6 +1690,34 @@ function App() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [showSurpriseMe, setShowSurpriseMe] = useState(false);
 
+  /* ---------------------------------------------------------------- */
+  /*  Navigation helpers — remember where each recipe/list was opened  */
+  /*  from, and remember scroll position per screen so returning to a  */
+  /*  list (via Back, or via a recipe's Back button) lands you right   */
+  /*  back where you were instead of jumping to the top.               */
+  /* ---------------------------------------------------------------- */
+  const scrollPositions = useRef({});
+  const viewKey = (v) => `${v.type}:${v.id || ""}${v.type === "home" ? ":" + activeTab : ""}`;
+
+  const navigateTo = (newView) => {
+    scrollPositions.current[viewKey(view)] = window.scrollY;
+    setView(newView);
+  };
+  // Opens a recipe, remembering the screen it was opened from so the
+  // recipe's Back button returns there instead of always going Home.
+  const openRecipe = (id) => navigateTo({ type: "recipe", id, from: view });
+
+  useEffect(() => {
+    if (loading) return;
+    const saved = scrollPositions.current[viewKey(view)];
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, typeof saved === "number" ? saved : 0);
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, loading]);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -1755,7 +1783,7 @@ function App() {
     setEditingRecipe(null);
     await persistRecipe(recipe);
     await Promise.all(updatedOthers.map((r) => persistRecipe(r)));
-    if (view.type !== "member" && view.type !== "brand") setView({ type: "recipe", id: recipe.id });
+    if (view.type !== "member" && view.type !== "brand") openRecipe(recipe.id);
   };
 
   const toggleFavorite = async (id) => {
@@ -1774,7 +1802,7 @@ function App() {
       await Promise.all(linkedBack.map((r) => persistRecipe(r)));
     } catch (e) { console.error(e); }
     setConfirmDelete(null);
-    if (view.type === "recipe" && view.id === id) setView({ type: "home" });
+    if (view.type === "recipe" && view.id === id) navigateTo(view.from || { type: "home" });
   };
 
   const deleteMemberNow = async (id) => {
@@ -1786,7 +1814,7 @@ function App() {
       await Promise.all(linkedRecipeIds.map((rid) => window.storage.delete(`recipe:${rid}`, true).catch(() => {})));
     } catch (e) { console.error(e); }
     setConfirmDelete(null);
-    if (view.type === "member" && view.id === id) setView({ type: "home" });
+    if (view.type === "member" && view.id === id) navigateTo({ type: "home" });
   };
 
   const memberById = (id) => members.find((m) => m.id === id);
@@ -1813,6 +1841,7 @@ function App() {
   const activeBrand = view.type === "brand" ? view.id : null;
 
   const switchTab = (tab) => {
+    scrollPositions.current[viewKey(view)] = window.scrollY;
     setActiveTab(tab);
     setFilterMember("");
     setFilterBrand("");
@@ -1825,7 +1854,7 @@ function App() {
   const Header = (
     <div className="sticky top-0 z-20 no-print" style={{ background: T.paper, borderBottom: `1px solid ${T.lineSoft}` }}>
       <div className="max-w-5xl mx-auto px-4 pt-5 pb-3" style={{ position: "relative" }}>
-        <button className="flex items-center gap-2 mb-4" onClick={() => setView({ type: "home" })}>
+        <button className="flex items-center gap-2 mb-4" onClick={() => navigateTo({ type: "home" })}>
           <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: T.pine }}>
             <BookOpen size={16} color="#fff" />
           </div>
@@ -1871,7 +1900,7 @@ function App() {
           </div>
           <input
             value={query}
-            onChange={(e) => { setQuery(e.target.value); if (view.type !== "home") setView({ type: "home" }); }}
+            onChange={(e) => { setQuery(e.target.value); if (view.type !== "home") navigateTo({ type: "home" }); }}
             placeholder={activeTab === "brand" ? "Search brand recipes by name, brand, or tag…" : "Search by recipe name, category, or tag…"}
             style={{ ...bodyFont, width: "100%", padding: "11px 14px 11px 40px", borderRadius: 999, border: `1px solid ${T.line}`, background: "#fff", fontSize: 14.5, outline: "none" }}
           />
@@ -1891,7 +1920,7 @@ function App() {
               <Dice size={13} /> Surprise Me
             </button>
             <button
-              onClick={() => setView({ type: "cookbook" })}
+              onClick={() => navigateTo({ type: "cookbook" })}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
               style={{ background: "#fff", border: `1px solid ${T.line}`, ...monoFont, fontSize: 11.5, color: T.pine }}
             >
@@ -1921,7 +1950,7 @@ function App() {
               {members.map((m) => {
                 const count = familyRecipes.filter((r) => r.memberId === m.id).length;
                 return (
-                  <button key={m.id} onClick={() => setView({ type: "member", id: m.id })} className="flex flex-col items-center flex-shrink-0 w-24">
+                  <button key={m.id} onClick={() => navigateTo({ type: "member", id: m.id })} className="flex flex-col items-center flex-shrink-0 w-24">
                     <div className="w-20 h-20 rounded-full overflow-hidden mb-2" style={{ background: T.paperTexture, border: `2px solid #fff`, boxShadow: "0 3px 10px rgba(43,36,24,0.15)" }}>
                       {m.photo ? <img src={m.photo} alt="" className="w-full h-full object-cover" /> : (
                         <div className="w-full h-full flex items-center justify-center"><Users size={18} color={T.inkFaint} /></div>
@@ -1980,13 +2009,13 @@ function App() {
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {filteredRecipes.map((r) => (
-            <RecipeCard key={r.id} recipe={r} member={memberById(r.memberId)} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="grid" />
+            <RecipeCard key={r.id} recipe={r} member={memberById(r.memberId)} onOpen={openRecipe} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="grid" />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
           {filteredRecipes.map((r) => (
-            <RecipeCard key={r.id} recipe={r} member={memberById(r.memberId)} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="list" />
+            <RecipeCard key={r.id} recipe={r} member={memberById(r.memberId)} onOpen={openRecipe} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="list" />
           ))}
         </div>
       )}
@@ -2010,7 +2039,7 @@ function App() {
               {brandNames.map((b) => {
                 const count = brandRecipes.filter((r) => r.brand === b).length;
                 return (
-                  <button key={b} onClick={() => setView({ type: "brand", id: b })} className="flex flex-col items-center flex-shrink-0 w-24">
+                  <button key={b} onClick={() => navigateTo({ type: "brand", id: b })} className="flex flex-col items-center flex-shrink-0 w-24">
                     <div className="w-20 h-20 rounded-full overflow-hidden mb-2 flex items-center justify-center" style={{ background: T.paperTexture, border: `2px solid #fff`, boxShadow: "0 3px 10px rgba(43,36,24,0.15)" }}>
                       <Tag size={18} color={T.inkFaint} />
                     </div>
@@ -2067,13 +2096,13 @@ function App() {
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {filteredRecipes.map((r) => (
-            <RecipeCard key={r.id} recipe={r} member={null} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="grid" />
+            <RecipeCard key={r.id} recipe={r} member={null} onOpen={openRecipe} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="grid" />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
           {filteredRecipes.map((r) => (
-            <RecipeCard key={r.id} recipe={r} member={null} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="list" />
+            <RecipeCard key={r.id} recipe={r} member={null} onOpen={openRecipe} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="list" />
           ))}
         </div>
       )}
@@ -2091,24 +2120,24 @@ function App() {
           recipe={activeRecipe}
           member={memberById(activeRecipe.memberId)}
           allRecipes={recipes}
-          onBack={() => setView({ type: "home" })}
+          onBack={() => navigateTo(view.from || { type: "home" })}
           onEdit={(r) => setEditingRecipe(r)}
           onDelete={(id) => setConfirmDelete({ kind: "recipe", id, text: `Delete “${activeRecipe.name}”? This can't be undone.` })}
           onToggleFavorite={toggleFavorite}
           onOpenArchive={setArchiveRecipe}
-          onOpenMember={(id) => setView({ type: "member", id })}
-          onOpenRecipe={(id) => setView({ type: "recipe", id })}
+          onOpenMember={(id) => navigateTo({ type: "member", id })}
+          onOpenRecipe={openRecipe}
         />
       ) : view.type === "cookbook" ? (
-        <CookbookExport recipes={familyRecipes} members={members} onBack={() => setView({ type: "home" })} />
+        <CookbookExport recipes={familyRecipes} members={members} onBack={() => navigateTo({ type: "home" })} />
       ) : view.type === "member" && activeMember ? (
         <MemberDetail
           member={activeMember}
           recipes={familyRecipes.filter((r) => r.memberId === activeMember.id)}
-          onBack={() => setView({ type: "home" })}
+          onBack={() => navigateTo({ type: "home" })}
           onEdit={(m) => setEditingMember(m)}
           onDelete={(id) => setConfirmDelete({ kind: "member", id, text: `Delete ${activeMember.name} and all ${familyRecipes.filter((r) => r.memberId === id).length} of their recipes? This can't be undone.` })}
-          onOpenRecipe={(id) => setView({ type: "recipe", id })}
+          onOpenRecipe={openRecipe}
           onToggleFavorite={toggleFavorite}
           onOpenArchive={setArchiveRecipe}
           onAddRecipe={() => setShowAddRecipe(true)}
@@ -2117,8 +2146,8 @@ function App() {
         <BrandDetail
           brand={activeBrand}
           recipes={brandRecipes.filter((r) => r.brand === activeBrand)}
-          onBack={() => setView({ type: "home" })}
-          onOpenRecipe={(id) => setView({ type: "recipe", id })}
+          onBack={() => navigateTo({ type: "home" })}
+          onOpenRecipe={openRecipe}
           onToggleFavorite={toggleFavorite}
           onOpenArchive={setArchiveRecipe}
           onAddRecipe={() => setShowAddRecipe(true)}
@@ -2156,7 +2185,7 @@ function App() {
           recipes={familyRecipes}
           members={members}
           onClose={() => setShowSurpriseMe(false)}
-          onPick={(id) => { setShowSurpriseMe(false); setView({ type: "recipe", id }); }}
+          onPick={(id) => { setShowSurpriseMe(false); openRecipe(id); }}
         />
       )}
 
