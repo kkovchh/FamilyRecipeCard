@@ -325,6 +325,7 @@ const Heart = ({ size = 20, color = "currentColor", fill = "none" }) => (
 const Printer = (p) => <Ico {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></Ico>;
 const Share2 = (p) => <Ico {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></Ico>;
 const Dice = (p) => <Ico {...p}><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></Ico>;
+const Tag = (p) => <Ico {...p}><path d="M20.59 13.41 11 3.83 3.83 11l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></Ico>;
 
 /* ---------------------------------------------------------------------- */
 /*  Theme                                                                  */
@@ -604,7 +605,7 @@ function RecipeCard({ recipe, member, onOpen, onToggleFavorite, onOpenArchive, v
         <div className="flex-1 min-w-0">
           <div style={{ ...displayFont, fontWeight: 600, fontSize: 16, color: T.ink }} className="truncate">{recipe.name}</div>
           <div style={{ ...monoFont, fontSize: 11.5, color: T.inkSoft }} className="truncate">
-            {member ? member.name : "Unassigned"} · {recipe.category || "Uncategorized"}
+            {member ? member.name : (recipe.brand || "Unassigned")} · {recipe.category || "Uncategorized"}
           </div>
         </div>
         <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(recipe.id); }} className="flex-shrink-0">
@@ -649,7 +650,7 @@ function RecipeCard({ recipe, member, onOpen, onToggleFavorite, onOpenArchive, v
               {recipe.name}
             </div>
             <div style={{ ...monoFont, fontSize: 11, color: T.inkSoft, marginTop: 4 }} className="truncate">
-              {member ? member.name : "Unassigned"}
+              {member ? member.name : (recipe.brand || "Unassigned")}
             </div>
             <div className="flex items-center justify-between mt-2">
               <div style={{ ...monoFont, fontSize: 10.5, color: T.pine }} className="truncate">
@@ -853,9 +854,10 @@ function MemberFormModal({ initial, onClose, onSave }) {
 /* ---------------------------------------------------------------------- */
 /*  Recipe form modal                                                      */
 /* ---------------------------------------------------------------------- */
-function RecipeFormModal({ initial, members, defaultMemberId, categories, recipes, onClose, onSave }) {
+function RecipeFormModal({ initial, members, defaultMemberId, categories, recipes, onClose, onSave, source = "family", brands = [], defaultBrand = "" }) {
   const [name, setName] = useState(initial?.name || "");
   const [memberId, setMemberId] = useState(initial?.memberId || defaultMemberId || "");
+  const [brand, setBrand] = useState(initial?.brand || defaultBrand || "");
   const [category, setCategory] = useState(initial?.category || "");
   const [ingredients, setIngredients] = useState((initial?.ingredients || []).join("\n"));
   const [directions, setDirections] = useState((initial?.directions || []).join("\n"));
@@ -866,6 +868,8 @@ function RecipeFormModal({ initial, members, defaultMemberId, categories, recipe
   const [relatedIds, setRelatedIds] = useState(initial?.relatedIds || []);
   const [relatedQuery, setRelatedQuery] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const isBrand = (initial ? initial.source : source) === "brand";
 
   const relatableRecipes = (recipes || []).filter((r) => r.id !== initial?.id);
   const relatedRecipes = relatedIds.map((id) => relatableRecipes.find((r) => r.id === id)).filter(Boolean);
@@ -903,20 +907,29 @@ function RecipeFormModal({ initial, members, defaultMemberId, categories, recipe
   };
   const removeOriginal = (i) => setOriginalPhotos((prev) => prev.filter((_, idx) => idx !== i));
 
-  const canSave = name.trim().length > 0 && memberId;
+  const canSave = name.trim().length > 0 && (isBrand ? brand.trim().length > 0 : !!memberId);
 
   return (
-    <ModalShell title={initial ? "Edit recipe" : "Add recipe"} onClose={onClose} wide>
+    <ModalShell title={initial ? "Edit recipe" : (isBrand ? "Add brand recipe" : "Add recipe")} onClose={onClose} wide>
       <Field label="Recipe name *">
         <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="Chocolate Chip Cookies" />
       </Field>
 
-      <Field label="Family member *" hint={members.length === 0 ? "Add a family member first so you can assign this recipe." : undefined}>
-        <select style={inputStyle} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
-          <option value="">Select who this recipe belongs to…</option>
-          {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-      </Field>
+      {isBrand ? (
+        <Field label="Brand / source *" hint="Where did this recipe come from? e.g. Coborn's, Nestlé, a cereal box, a recipe card from the store.">
+          <input style={inputStyle} list="brand-options" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Coborn's, Nestlé, Pillsbury…" />
+          <datalist id="brand-options">
+            {brands.map((b) => <option key={b} value={b} />)}
+          </datalist>
+        </Field>
+      ) : (
+        <Field label="Family member *" hint={members.length === 0 ? "Add a family member first so you can assign this recipe." : undefined}>
+          <select style={inputStyle} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+            <option value="">Select who this recipe belongs to…</option>
+            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+        </Field>
+      )}
 
       <Field label="Category">
         <input style={inputStyle} list="category-options" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Cookies, Dinner, Holiday…" />
@@ -937,8 +950,8 @@ function RecipeFormModal({ initial, members, defaultMemberId, categories, recipe
         <input style={inputStyle} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="cookies, christmas, chocolate" />
       </Field>
 
-      <Field label="Notes / family memory or story (optional)">
-        <textarea style={{ ...inputStyle, minHeight: 80 }} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Grandma always doubled this recipe for the holidays…" />
+      <Field label={isBrand ? "Notes (optional)" : "Notes / family memory or story (optional)"}>
+        <textarea style={{ ...inputStyle, minHeight: 80 }} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={isBrand ? "Where you found it, what you changed, how it turned out…" : "Grandma always doubled this recipe for the holidays…"} />
       </Field>
 
       <Field label="Related recipes (optional)" hint="Link a frosting, sauce, or side that pairs with this one — the link shows on both recipes.">
@@ -984,7 +997,7 @@ function RecipeFormModal({ initial, members, defaultMemberId, categories, recipe
         </div>
       </Field>
 
-      <Field label="Original recipe card (the handwritten or printed card)" hint="Upload or take multiple photos — these are kept separate from the typed recipe above so the physical history is preserved.">
+      <Field label={isBrand ? "Original packaging / card photo" : "Original recipe card (the handwritten or printed card)"} hint="Upload or take multiple photos — these are kept separate from the typed recipe above so the original is preserved.">
         <label className="flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed cursor-pointer" style={{ borderColor: T.line, color: T.pine, ...monoFont, fontSize: 12.5 }}>
           <Upload size={15} /> {busy ? "Processing…" : "Add original card photo(s)"}
           <input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handleOriginalPhotos} />
@@ -1012,8 +1025,10 @@ function RecipeFormModal({ initial, members, defaultMemberId, categories, recipe
           if (!canSave) return;
           onSave({
             id: initial?.id || makeId("recipe"),
+            source: isBrand ? "brand" : "family",
             name: name.trim(),
-            memberId,
+            memberId: isBrand ? "" : memberId,
+            brand: isBrand ? brand.trim() : "",
             category: category.trim(),
             ingredients: ingredients.split("\n").map((s) => formatFractions(s.trim())).filter(Boolean),
             directions: directions.split("\n").map((s) => formatFractions(s.trim())).filter(Boolean),
@@ -1027,7 +1042,7 @@ function RecipeFormModal({ initial, members, defaultMemberId, categories, recipe
           });
         }}
       >
-        <Check size={16} /> {initial ? "Save changes" : "Add recipe"}
+        <Check size={16} /> {initial ? "Save changes" : (isBrand ? "Add brand recipe" : "Add recipe")}
       </PrimaryButton>
     </ModalShell>
   );
@@ -1056,6 +1071,7 @@ function ConfirmDialog({ text, onCancel, onConfirm }) {
 function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, onToggleFavorite, onOpenArchive, onOpenMember, onOpenRecipe }) {
   const relatedRecipes = (recipe.relatedIds || []).map((id) => (allRecipes || []).find((r) => r.id === id)).filter(Boolean);
   const [toast, setToast] = useState("");
+  const isBrand = recipe.source === "brand";
 
   const showToast = (msg) => {
     setToast(msg);
@@ -1112,7 +1128,16 @@ function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, on
         <div className="p-5">
           <Eyebrow>{recipe.category || "Uncategorized"} · added {formatDate(recipe.dateAdded)}</Eyebrow>
           <div style={{ ...displayFont, fontWeight: 700, fontSize: 28, color: T.ink, marginTop: 4, lineHeight: 1.15 }}>{recipe.name}</div>
-          {member && (
+          {isBrand ? (
+            recipe.brand && (
+              <div className="flex items-center gap-2 mt-3">
+                <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: T.paperTexture }}>
+                  <Tag size={13} color={T.pine} />
+                </div>
+                <span style={{ ...monoFont, fontSize: 12.5, color: T.pine }}>from {recipe.brand}</span>
+              </div>
+            )
+          ) : member && (
             <button onClick={() => onOpenMember(member.id)} className="flex items-center gap-2 mt-3">
               <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ background: T.paperTexture }}>
                 {member.photo && <img src={member.photo} alt="" className="w-full h-full object-cover" />}
@@ -1135,7 +1160,7 @@ function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, on
                 <img src={recipe.originalPhotos[0]} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="text-left">
-                <div style={{ ...displayFont, fontWeight: 600, fontSize: 13.5, color: T.ink }}>View original recipe card</div>
+                <div style={{ ...displayFont, fontWeight: 600, fontSize: 13.5, color: T.ink }}>{isBrand ? "View original packaging / card" : "View original recipe card"}</div>
                 <div style={{ ...monoFont, fontSize: 10.5, color: T.inkSoft }}>{recipe.originalPhotos.length} archived photo{recipe.originalPhotos.length > 1 ? "s" : ""}</div>
               </div>
               <Info size={16} color={T.pine} className="ml-auto" />
@@ -1201,7 +1226,7 @@ function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, on
 
       {recipe.notes && (
         <div className="p-4 rounded-xl mb-5" style={{ background: T.paper, border: `1px dashed ${T.line}` }}>
-          <Eyebrow style={{ marginBottom: 6 }}>Family memory / story</Eyebrow>
+          <Eyebrow style={{ marginBottom: 6 }}>{isBrand ? "Notes" : "Family memory / story"}</Eyebrow>
           <div style={{ ...bodyFont, fontStyle: "italic", fontSize: 14, color: T.inkSoft, lineHeight: 1.6 }}>{recipe.notes}</div>
         </div>
       )}
@@ -1266,6 +1291,43 @@ function MemberDetail({ member, recipes, onBack, onEdit, onDelete, onOpenRecipe,
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {recipes.map((r) => (
             <RecipeCard key={r.id} recipe={r} member={member} onOpen={onOpenRecipe} onToggleFavorite={onToggleFavorite} onOpenArchive={onOpenArchive} viewMode="grid" />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Brand detail page (parallel to MemberDetail, for brand-sourced recipes) */
+/* ---------------------------------------------------------------------- */
+function BrandDetail({ brand, recipes, onBack, onOpenRecipe, onToggleFavorite, onOpenArchive, onAddRecipe }) {
+  return (
+    <div className="max-w-5xl mx-auto px-4 pb-24">
+      <div className="flex items-center justify-between pt-5 pb-4">
+        <IconButton onClick={onBack} title="Back"><ArrowLeft size={17} /></IconButton>
+        <div style={{ width: 36 }} />
+      </div>
+
+      <div className="flex flex-col items-center text-center mb-8">
+        <div className="w-28 h-28 rounded-full overflow-hidden mb-4 flex items-center justify-center" style={{ background: T.paperTexture, border: `3px solid #fff`, boxShadow: "0 4px 14px rgba(43,36,24,0.18)" }}>
+          <Tag size={26} color={T.inkFaint} />
+        </div>
+        <div style={{ ...displayFont, fontWeight: 700, fontSize: 30, color: T.ink }}>{brand}</div>
+        <Eyebrow style={{ marginTop: 6 }}>{recipes.length} recipe{recipes.length !== 1 ? "s" : ""}</Eyebrow>
+      </div>
+
+      <div className="flex items-center justify-between mb-3">
+        <div style={{ ...displayFont, fontWeight: 600, fontSize: 18, color: T.ink }}>Recipes from {brand}</div>
+        <GhostButton onClick={onAddRecipe}><Plus size={13} /> Add recipe</GhostButton>
+      </div>
+
+      {recipes.length === 0 ? (
+        <EmptyState icon={<Tag size={22} color={T.pine} />} title="No recipes yet" subtitle={`Add the first recipe you collected from ${brand}.`} />
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {recipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} member={null} onOpen={onOpenRecipe} onToggleFavorite={onToggleFavorite} onOpenArchive={onOpenArchive} viewMode="grid" />
           ))}
         </div>
       )}
@@ -1612,8 +1674,10 @@ function App() {
   const [recipes, setRecipes] = useState([]);
 
   const [view, setView] = useState({ type: "home" });
+  const [activeTab, setActiveTab] = useState("family"); // "family" | "brand"
   const [query, setQuery] = useState("");
   const [filterMember, setFilterMember] = useState("");
+  const [filterBrand, setFilterBrand] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterFavorites, setFilterFavorites] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
@@ -1631,7 +1695,11 @@ function App() {
       setLoading(true);
       const [m, r] = await Promise.all([storageGetAll("member:"), storageGetAll("recipe:")]);
       setMembers(m.sort((a, b) => (a.dateAdded || "").localeCompare(b.dateAdded || "")));
-      setRecipes(r.sort((a, b) => (b.dateAdded || "").localeCompare(a.dateAdded || "")));
+      // Existing recipes saved before the brand-recipe feature don't have a
+      // `source` field — treat those as "family" so nothing already in
+      // someone's box quietly disappears or gets miscategorized.
+      const normalized = r.map((rec) => ({ ...rec, source: rec.source === "brand" ? "brand" : "family" }));
+      setRecipes(normalized.sort((a, b) => (b.dateAdded || "").localeCompare(a.dateAdded || "")));
       setLoading(false);
     })();
   }, []);
@@ -1687,7 +1755,7 @@ function App() {
     setEditingRecipe(null);
     await persistRecipe(recipe);
     await Promise.all(updatedOthers.map((r) => persistRecipe(r)));
-    if (view.type !== "member") setView({ type: "recipe", id: recipe.id });
+    if (view.type !== "member" && view.type !== "brand") setView({ type: "recipe", id: recipe.id });
   };
 
   const toggleFavorite = async (id) => {
@@ -1722,20 +1790,37 @@ function App() {
   };
 
   const memberById = (id) => members.find((m) => m.id === id);
-  const categories = Array.from(new Set(recipes.map((r) => r.category).filter(Boolean)));
+  const familyRecipes = recipes.filter((r) => r.source !== "brand");
+  const brandRecipes = recipes.filter((r) => r.source === "brand");
+  const categories = Array.from(new Set(familyRecipes.map((r) => r.category).filter(Boolean)));
+  const brandCategories = Array.from(new Set(brandRecipes.map((r) => r.category).filter(Boolean)));
+  const brandNames = Array.from(new Set(brandRecipes.map((r) => r.brand).filter(Boolean))).sort();
 
   const q = query.trim().toLowerCase();
-  const filteredRecipes = recipes.filter((r) => {
-    if (filterMember && r.memberId !== filterMember) return false;
-    if (filterCategory && r.category !== filterCategory) return false;
+  const tabRecipes = activeTab === "brand" ? brandRecipes : familyRecipes;
+  const filteredRecipes = tabRecipes.filter((r) => {
+    if (activeTab === "family" && filterMember && r.memberId !== filterMember) return false;
+    if (activeTab === "brand" && filterBrand && r.brand !== filterBrand) return false;
+    if ((activeTab === "family" ? filterCategory : filterCategory) && r.category !== filterCategory) return false;
     if (filterFavorites && !r.favorite) return false;
     if (!q) return true;
-    const haystack = [r.name, r.category, ...(r.tags || [])].join(" ").toLowerCase();
+    const haystack = [r.name, r.category, r.brand, ...(r.tags || [])].join(" ").toLowerCase();
     return haystack.includes(q);
   });
 
   const activeRecipe = view.type === "recipe" ? recipes.find((r) => r.id === view.id) : null;
   const activeMember = view.type === "member" ? memberById(view.id) : null;
+  const activeBrand = view.type === "brand" ? view.id : null;
+
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    setFilterMember("");
+    setFilterBrand("");
+    setFilterCategory("");
+    setFilterFavorites(false);
+    setQuery("");
+    setView({ type: "home" });
+  };
 
   const Header = (
     <div className="sticky top-0 z-20 no-print" style={{ background: T.paper, borderBottom: `1px solid ${T.lineSoft}` }}>
@@ -1752,6 +1837,34 @@ function App() {
         >
           Sign out
         </button>
+
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => switchTab("family")}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors"
+            style={{
+              ...monoFont, fontSize: 12.5,
+              background: activeTab === "family" ? T.pine : "#fff",
+              color: activeTab === "family" ? "#fff" : T.inkSoft,
+              border: `1px solid ${activeTab === "family" ? T.pine : T.line}`,
+            }}
+          >
+            <Users size={13} /> Family Recipes
+          </button>
+          <button
+            onClick={() => switchTab("brand")}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors"
+            style={{
+              ...monoFont, fontSize: 12.5,
+              background: activeTab === "brand" ? T.pine : "#fff",
+              color: activeTab === "brand" ? "#fff" : T.inkSoft,
+              border: `1px solid ${activeTab === "brand" ? T.pine : T.line}`,
+            }}
+          >
+            <Tag size={13} /> Brand Recipes
+          </button>
+        </div>
+
         <div className="relative">
           <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
             <Search size={16} color={T.inkFaint} />
@@ -1759,7 +1872,7 @@ function App() {
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); if (view.type !== "home") setView({ type: "home" }); }}
-            placeholder="Search by recipe name, category, or tag…"
+            placeholder={activeTab === "brand" ? "Search brand recipes by name, brand, or tag…" : "Search by recipe name, category, or tag…"}
             style={{ ...bodyFont, width: "100%", padding: "11px 14px 11px 40px", borderRadius: 999, border: `1px solid ${T.line}`, background: "#fff", fontSize: 14.5, outline: "none" }}
           />
           {query && (
@@ -1768,27 +1881,29 @@ function App() {
             </button>
           )}
         </div>
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={() => setShowSurpriseMe(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-            style={{ background: "#fff", border: `1px solid ${T.line}`, ...monoFont, fontSize: 11.5, color: T.pine }}
-          >
-            <Dice size={13} /> Surprise Me
-          </button>
-          <button
-            onClick={() => setView({ type: "cookbook" })}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-            style={{ background: "#fff", border: `1px solid ${T.line}`, ...monoFont, fontSize: 11.5, color: T.pine }}
-          >
-            <Printer size={13} /> Export All Recipes
-          </button>
-        </div>
+        {activeTab === "family" && (
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => setShowSurpriseMe(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              style={{ background: "#fff", border: `1px solid ${T.line}`, ...monoFont, fontSize: 11.5, color: T.pine }}
+            >
+              <Dice size={13} /> Surprise Me
+            </button>
+            <button
+              onClick={() => setView({ type: "cookbook" })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              style={{ background: "#fff", border: `1px solid ${T.line}`, ...monoFont, fontSize: 11.5, color: T.pine }}
+            >
+              <Printer size={13} /> Export All Recipes
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 
-  const Home = (
+  const FamilyHome = (
     <div className="max-w-5xl mx-auto px-4 pb-24">
       {!q && (
         <>
@@ -1804,7 +1919,7 @@ function App() {
           ) : (
             <div className="flex gap-4 overflow-x-auto pb-3 mb-6 -mx-1 px-1">
               {members.map((m) => {
-                const count = recipes.filter((r) => r.memberId === m.id).length;
+                const count = familyRecipes.filter((r) => r.memberId === m.id).length;
                 return (
                   <button key={m.id} onClick={() => setView({ type: "member", id: m.id })} className="flex flex-col items-center flex-shrink-0 w-24">
                     <div className="w-20 h-20 rounded-full overflow-hidden mb-2" style={{ background: T.paperTexture, border: `2px solid #fff`, boxShadow: "0 3px 10px rgba(43,36,24,0.15)" }}>
@@ -1859,8 +1974,8 @@ function App() {
       {filteredRecipes.length === 0 ? (
         <EmptyState
           icon={<Search size={20} color={T.pine} />}
-          title={recipes.length === 0 ? "Your recipe box is empty" : "No recipes match"}
-          subtitle={recipes.length === 0 ? "Add your first recipe to start building the family archive." : "Try a different search term or clear your filters."}
+          title={familyRecipes.length === 0 ? "Your recipe box is empty" : "No recipes match"}
+          subtitle={familyRecipes.length === 0 ? "Add your first recipe to start building the family archive." : "Try a different search term or clear your filters."}
         />
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -1872,6 +1987,93 @@ function App() {
         <div className="flex flex-col gap-2.5">
           {filteredRecipes.map((r) => (
             <RecipeCard key={r.id} recipe={r} member={memberById(r.memberId)} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="list" />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const BrandHome = (
+    <div className="max-w-5xl mx-auto px-4 pb-24">
+      {!q && (
+        <>
+          <div className="flex items-center justify-between mt-6 mb-3">
+            <div style={{ ...displayFont, fontWeight: 600, fontSize: 18, color: T.ink }}>Browse by Brand</div>
+          </div>
+
+          {brandNames.length === 0 ? (
+            <div className="rounded-2xl mb-6" style={{ background: T.card, border: `1px dashed ${T.line}` }}>
+              <EmptyState icon={<Tag size={22} color={T.pine} />} title="No brand recipes yet" subtitle="Add recipes you've collected from stores, cereal boxes, or company websites — kept separate from the family recipes." />
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-3 mb-6 -mx-1 px-1">
+              {brandNames.map((b) => {
+                const count = brandRecipes.filter((r) => r.brand === b).length;
+                return (
+                  <button key={b} onClick={() => setView({ type: "brand", id: b })} className="flex flex-col items-center flex-shrink-0 w-24">
+                    <div className="w-20 h-20 rounded-full overflow-hidden mb-2 flex items-center justify-center" style={{ background: T.paperTexture, border: `2px solid #fff`, boxShadow: "0 3px 10px rgba(43,36,24,0.15)" }}>
+                      <Tag size={18} color={T.inkFaint} />
+                    </div>
+                    <div style={{ ...displayFont, fontWeight: 600, fontSize: 12.5, color: T.ink, textAlign: "center" }} className="truncate w-full">{b}</div>
+                    <div style={{ ...monoFont, fontSize: 10, color: T.inkSoft }}>{count} recipe{count !== 1 ? "s" : ""}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-2">
+        <Chip active={!filterBrand && !filterCategory && !filterFavorites} onClick={() => { setFilterBrand(""); setFilterCategory(""); setFilterFavorites(false); }}>All</Chip>
+        {brandCategories.map((c) => (
+          <Chip key={c} active={filterCategory === c} onClick={() => setFilterCategory(filterCategory === c ? "" : c)}>{c}</Chip>
+        ))}
+        <Chip active={filterFavorites} onClick={() => setFilterFavorites((v) => !v)} color={T.brick}>♥ Favorites</Chip>
+      </div>
+
+      {brandNames.length > 0 && (
+        <div className="mb-4">
+          <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} style={{ ...monoFont, fontSize: 12, color: T.inkSoft, padding: "6px 10px", borderRadius: 8, border: `1px solid ${T.line}`, background: "#fff" }}>
+            <option value="">Filter by brand…</option>
+            {brandNames.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-3">
+        <div style={{ ...displayFont, fontWeight: 600, fontSize: 18, color: T.ink }}>
+          {q ? `Search results for “${query}”` : "Brand Recipe Library"}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setViewMode("grid")} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: viewMode === "grid" ? T.pine : "transparent", color: viewMode === "grid" ? "#fff" : T.inkSoft }}>
+            <LayoutGrid size={14} />
+          </button>
+          <button onClick={() => setViewMode("list")} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: viewMode === "list" ? T.pine : "transparent", color: viewMode === "list" ? "#fff" : T.inkSoft }}>
+            <ListIcon size={14} />
+          </button>
+          <PrimaryButton onClick={() => setShowAddRecipe(true)} style={{ padding: "8px 16px", fontSize: 13 }}>
+            <Plus size={14} /> Add recipe
+          </PrimaryButton>
+        </div>
+      </div>
+
+      {filteredRecipes.length === 0 ? (
+        <EmptyState
+          icon={<Search size={20} color={T.pine} />}
+          title={brandRecipes.length === 0 ? "No brand recipes yet" : "No recipes match"}
+          subtitle={brandRecipes.length === 0 ? "Add the first recipe you've collected from a brand or store." : "Try a different search term or clear your filters."}
+        />
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {filteredRecipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} member={null} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="grid" />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {filteredRecipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} member={null} onOpen={(id) => setView({ type: "recipe", id })} onToggleFavorite={toggleFavorite} onOpenArchive={setArchiveRecipe} viewMode="list" />
           ))}
         </div>
       )}
@@ -1898,21 +2100,33 @@ function App() {
           onOpenRecipe={(id) => setView({ type: "recipe", id })}
         />
       ) : view.type === "cookbook" ? (
-        <CookbookExport recipes={recipes} members={members} onBack={() => setView({ type: "home" })} />
+        <CookbookExport recipes={familyRecipes} members={members} onBack={() => setView({ type: "home" })} />
       ) : view.type === "member" && activeMember ? (
         <MemberDetail
           member={activeMember}
-          recipes={recipes.filter((r) => r.memberId === activeMember.id)}
+          recipes={familyRecipes.filter((r) => r.memberId === activeMember.id)}
           onBack={() => setView({ type: "home" })}
           onEdit={(m) => setEditingMember(m)}
-          onDelete={(id) => setConfirmDelete({ kind: "member", id, text: `Delete ${activeMember.name} and all ${recipes.filter((r) => r.memberId === id).length} of their recipes? This can't be undone.` })}
+          onDelete={(id) => setConfirmDelete({ kind: "member", id, text: `Delete ${activeMember.name} and all ${familyRecipes.filter((r) => r.memberId === id).length} of their recipes? This can't be undone.` })}
           onOpenRecipe={(id) => setView({ type: "recipe", id })}
           onToggleFavorite={toggleFavorite}
           onOpenArchive={setArchiveRecipe}
           onAddRecipe={() => setShowAddRecipe(true)}
         />
+      ) : view.type === "brand" && activeBrand ? (
+        <BrandDetail
+          brand={activeBrand}
+          recipes={brandRecipes.filter((r) => r.brand === activeBrand)}
+          onBack={() => setView({ type: "home" })}
+          onOpenRecipe={(id) => setView({ type: "recipe", id })}
+          onToggleFavorite={toggleFavorite}
+          onOpenArchive={setArchiveRecipe}
+          onAddRecipe={() => setShowAddRecipe(true)}
+        />
+      ) : activeTab === "brand" ? (
+        BrandHome
       ) : (
-        Home
+        FamilyHome
       )}
 
       {showAddMember && <MemberFormModal onClose={() => setShowAddMember(false)} onSave={saveMember} />}
@@ -1921,22 +2135,25 @@ function App() {
       {showAddRecipe && (
         <RecipeFormModal
           members={members}
-          categories={categories}
+          categories={activeTab === "brand" ? brandCategories : categories}
           recipes={recipes}
           defaultMemberId={view.type === "member" ? view.id : ""}
+          source={activeTab === "brand" ? "brand" : "family"}
+          brands={brandNames}
+          defaultBrand={view.type === "brand" ? view.id : ""}
           onClose={() => setShowAddRecipe(false)}
           onSave={saveRecipe}
         />
       )}
       {editingRecipe && (
-        <RecipeFormModal initial={editingRecipe} members={members} categories={categories} recipes={recipes} onClose={() => setEditingRecipe(null)} onSave={saveRecipe} />
+        <RecipeFormModal initial={editingRecipe} members={members} categories={categories} recipes={recipes} brands={brandNames} onClose={() => setEditingRecipe(null)} onSave={saveRecipe} />
       )}
 
       {archiveRecipe && <ArchiveLightbox recipe={archiveRecipe} onClose={() => setArchiveRecipe(null)} />}
 
       {showSurpriseMe && (
         <SurpriseMeModal
-          recipes={recipes}
+          recipes={familyRecipes}
           members={members}
           onClose={() => setShowSurpriseMe(false)}
           onPick={(id) => { setShowSurpriseMe(false); setView({ type: "recipe", id }); }}
