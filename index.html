@@ -923,47 +923,45 @@ function CookMode({ recipe, onClose }) {
 
   if (cookSteps.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center text-center no-print px-6" style={{ background: T.ink }}>
-        <div style={{ ...bodyFont, fontSize: 15, color: "#E7DEC4", marginBottom: 20, maxWidth: 320 }}>This recipe doesn't have any directions to walk through yet.</div>
-        <GhostButton onClick={onClose} style={{ borderColor: "rgba(255,255,255,0.3)", color: "#EFE7CE" }}>Close</GhostButton>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center text-center no-print px-6" style={{ background: T.paper }}>
+        <div style={{ ...bodyFont, fontSize: 15, color: T.inkSoft, marginBottom: 20, maxWidth: 320 }}>This recipe doesn't have any directions to walk through yet.</div>
+        <GhostButton onClick={onClose}>Close</GhostButton>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col no-print" style={{ background: T.ink }}>
-      <div style={{ height: 4, background: "rgba(255,255,255,0.12)", flexShrink: 0 }}>
-        <div style={{ height: "100%", width: `${progress}%`, background: T.gold, transition: "width 0.25s ease" }} />
+    <div className="fixed inset-0 z-50 flex flex-col no-print" style={{ background: T.paper }}>
+      <div style={{ height: 4, background: T.lineSoft, flexShrink: 0 }}>
+        <div style={{ height: "100%", width: `${progress}%`, background: T.pine, transition: "width 0.25s ease" }} />
       </div>
 
-      <div className="flex items-center justify-between px-5 py-4 flex-shrink-0">
-        <div style={{ ...monoFont, color: "#C9BA95", fontSize: 12 }}>
+      <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid ${T.lineSoft}` }}>
+        <div style={{ ...monoFont, color: T.inkSoft, fontSize: 12 }}>
           Step {stepIdx + 1} of {cookSteps.length}
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowIngredients(true)}
             className="cook-ingredients-toggle-btn"
-            style={{ ...monoFont, fontSize: 11.5, color: "#EFE7CE", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 999, padding: "7px 14px" }}
+            style={{ ...monoFont, fontSize: 11.5, color: T.pine, border: `1px solid ${T.line}`, borderRadius: 999, padding: "7px 14px", background: "#fff" }}
           >
             Ingredients
           </button>
-          <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.1)", color: "#EFE7CE" }} title="Exit Cook Mode">
-            <X size={18} />
-          </button>
+          <IconButton onClick={onClose} title="Exit Cook Mode"><X size={18} /></IconButton>
         </div>
       </div>
 
       <div className="flex-1 flex" style={{ minHeight: 0 }}>
         <div className="flex-1 flex items-stretch" style={{ minHeight: 0 }}>
-        <button onClick={goPrev} disabled={stepIdx === 0} className="flex items-center justify-center flex-shrink-0" style={{ width: "15%", opacity: stepIdx === 0 ? 0.25 : 1 }}>
-          <ChevronLeft size={26} color="#EFE7CE" />
+        <button onClick={goPrev} disabled={stepIdx === 0} className="flex items-center justify-center flex-shrink-0" style={{ width: "15%", opacity: stepIdx === 0 ? 0.25 : 1, color: T.inkSoft }}>
+          <ChevronLeft size={26} />
         </button>
         <div className="flex-1 flex flex-col items-center justify-center px-5 text-center" style={{ overflowY: "auto" }}>
           {step.heading && (
-            <div style={{ ...monoFont, fontSize: 12, color: T.gold, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>{step.heading}</div>
+            <div style={{ ...monoFont, fontSize: 12, color: T.pine, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>{step.heading}</div>
           )}
-          <div style={{ ...displayFont, fontWeight: 600, fontSize: "clamp(22px, 5vw, 34px)", color: "#F3ECD8", lineHeight: 1.35, maxWidth: 620 }}>
+          <div style={{ ...displayFont, fontWeight: 600, fontSize: "clamp(22px, 5vw, 34px)", color: T.ink, lineHeight: 1.35, maxWidth: 620 }}>
             {step.text}
           </div>
 
@@ -972,14 +970,14 @@ function CookMode({ recipe, onClose }) {
               {timerSeconds === null ? (
                 <button
                   onClick={() => startTimer(suggestedSeconds)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full"
-                  style={{ background: T.gold, color: T.ink, ...displayFont, fontWeight: 600, fontSize: 14 }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full shadow-sm"
+                  style={{ background: T.pine, color: "#fff", ...displayFont, fontWeight: 600, fontSize: 14 }}
                 >
                   <Play size={14} /> Start {formatTimer(suggestedSeconds)} timer
                 </button>
               ) : (
                 <div className="flex flex-col items-center gap-3">
-                  <div style={{ ...displayFont, fontWeight: 700, fontSize: 42, color: timerSeconds === 0 ? T.brickSoft : "#F3ECD8" }}>
+                  <div style={{ ...displayFont, fontWeight: 700, fontSize: 42, color: timerSeconds === 0 ? T.brick : T.ink }}>
                     {formatTimer(timerSeconds)}
                   </div>
                   <div className="flex gap-2">
@@ -987,7 +985,7 @@ function CookMode({ recipe, onClose }) {
                       <button
                         onClick={() => setTimerRunning((r) => !r)}
                         className="flex items-center gap-1.5"
-                        style={{ ...monoFont, fontSize: 11.5, color: "#EFE7CE", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 999, padding: "7px 14px" }}
+                        style={{ ...monoFont, fontSize: 11.5, color: T.inkSoft, border: `1px solid ${T.line}`, borderRadius: 999, padding: "7px 14px", background: "#fff" }}
                       >
                         {timerRunning ? <Pause size={12} /> : <Play size={12} />} {timerRunning ? "Pause" : "Resume"}
                       </button>
@@ -995,7 +993,7 @@ function CookMode({ recipe, onClose }) {
                     <button
                       onClick={resetTimer}
                       className="flex items-center gap-1.5"
-                      style={{ ...monoFont, fontSize: 11.5, color: "#EFE7CE", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 999, padding: "7px 14px" }}
+                      style={{ ...monoFont, fontSize: 11.5, color: T.inkSoft, border: `1px solid ${T.line}`, borderRadius: 999, padding: "7px 14px", background: "#fff" }}
                     >
                       <RotateCcw size={12} /> Reset
                     </button>
@@ -1005,19 +1003,19 @@ function CookMode({ recipe, onClose }) {
             </div>
           )}
         </div>
-        <button onClick={goNext} disabled={isLast} className="flex items-center justify-center flex-shrink-0" style={{ width: "15%", opacity: isLast ? 0.25 : 1 }}>
-          <ChevronRight size={26} color="#EFE7CE" />
+        <button onClick={goNext} disabled={isLast} className="flex items-center justify-center flex-shrink-0" style={{ width: "15%", opacity: isLast ? 0.25 : 1, color: T.inkSoft }}>
+          <ChevronRight size={26} />
         </button>
         </div>
 
-        <div className="cook-sidebar flex-col" style={{ width: 300, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.03)", overflowY: "auto", padding: "22px 20px" }}>
-          <div style={{ ...monoFont, fontSize: 11, color: "#C9BA95", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Ingredients</div>
-          <ul style={{ ...bodyFont, fontSize: 14.5, color: "#F3ECD8" }} className="space-y-2.5">
+        <div className="cook-sidebar flex-col" style={{ width: 300, flexShrink: 0, borderLeft: `1px solid ${T.lineSoft}`, background: T.card, overflowY: "auto", padding: "22px 20px" }}>
+          <div style={{ ...monoFont, fontSize: 11, color: T.inkSoft, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Ingredients</div>
+          <ul style={{ ...bodyFont, fontSize: 14.5, color: T.ink }} className="space-y-2.5">
             {(recipe.ingredients || []).map((ing, i) => {
               const heading = ing.match(/^#{1,6}\s*(.+)/);
               if (heading) {
                 return (
-                  <li key={i} style={{ listStyle: "none", ...displayFont, fontWeight: 700, fontSize: 11.5, color: T.gold, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: i === 0 ? 0 : 16, marginBottom: 2 }}>
+                  <li key={i} style={{ listStyle: "none", ...displayFont, fontWeight: 700, fontSize: 11.5, color: T.pine, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: i === 0 ? 0 : 16, marginBottom: 2 }}>
                     {heading[1]}
                   </li>
                 );
@@ -1025,12 +1023,12 @@ function CookMode({ recipe, onClose }) {
               const checked = checkedIngredients.has(i);
               return (
                 <li key={i}>
-                  <button onClick={() => toggleIngredientChecked(i)} className="flex items-start gap-2.5 text-left w-full" style={{ opacity: checked ? 0.45 : 1 }}>
+                  <button onClick={() => toggleIngredientChecked(i)} className="flex items-start gap-2.5 text-left w-full" style={{ opacity: checked ? 0.5 : 1 }}>
                     <span
                       className="flex-shrink-0 flex items-center justify-center"
-                      style={{ width: 16, height: 16, marginTop: 2, borderRadius: 4, border: `1.5px solid ${checked ? T.gold : "rgba(255,255,255,0.35)"}`, background: checked ? T.gold : "transparent" }}
+                      style={{ width: 16, height: 16, marginTop: 2, borderRadius: 4, border: `1.5px solid ${checked ? T.pine : T.line}`, background: checked ? T.pine : "#fff" }}
                     >
-                      {checked && <Check size={11} color={T.ink} />}
+                      {checked && <Check size={11} color="#fff" />}
                     </span>
                     <span style={{ textDecoration: checked ? "line-through" : "none" }}>{ing}</span>
                   </button>
@@ -1044,7 +1042,7 @@ function CookMode({ recipe, onClose }) {
       <div className="flex items-center justify-between px-5 pb-6 pt-2 gap-3 flex-shrink-0">
         <GhostButton
           onClick={goPrev}
-          style={{ flex: 1, justifyContent: "center", borderColor: "rgba(255,255,255,0.25)", color: "#EFE7CE", opacity: stepIdx === 0 ? 0.4 : 1 }}
+          style={{ flex: 1, justifyContent: "center", opacity: stepIdx === 0 ? 0.4 : 1 }}
         >
           <ChevronLeft size={14} /> Back
         </GhostButton>
@@ -1062,7 +1060,7 @@ function CookMode({ recipe, onClose }) {
       {showIngredients && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6"
-          style={{ background: "rgba(0,0,0,0.6)" }}
+          style={{ background: "rgba(20,16,10,0.55)" }}
           onClick={() => setShowIngredients(false)}
         >
           <div
