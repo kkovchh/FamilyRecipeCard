@@ -342,27 +342,63 @@ const Flame = (p) => <Ico {...p}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 
 const Play = (p) => <Ico {...p}><polygon points="6 3 20 12 6 21 6 3"/></Ico>;
 const Pause = (p) => <Ico {...p}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></Ico>;
 const RotateCcw = (p) => <Ico {...p}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></Ico>;
+const Palette = (p) => <Ico {...p}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C22 6.012 17.461 2 12 2z"/></Ico>;
 
 /* ---------------------------------------------------------------------- */
 /*  Theme                                                                  */
+/*  Several complete seasonal palettes, all with the same keys, so the     */
+/*  whole app can swap "moods" (Classic, Autumn, Christmas, Valentine's,   */
+/*  4th of July, Spring) just by pointing T at a different palette.        */
 /* ---------------------------------------------------------------------- */
-const T = {
-  paper: "#E7DEC4",
-  paperTexture: "#DDD2B2",
-  card: "#FBF6E9",
-  cardBack: "#F3ECD8",
-  ink: "#2B2418",
-  inkSoft: "#6B5D45",
-  inkFaint: "#9C8D6E",
-  pine: "#2F4B3C",
-  pineDark: "#203528",
-  brick: "#93402C",
-  brickSoft: "#B96A52",
-  gold: "#B4872A",
-  line: "#C9BA95",
-  lineSoft: "#DED2AE",
-  tape: "#E9DEB8",
+const THEMES = {
+  classic: {
+    label: "Classic Kraft", emoji: "📜",
+    paper: "#E7DEC4", paperTexture: "#DDD2B2", card: "#FBF6E9", cardBack: "#F3ECD8",
+    ink: "#2B2418", inkSoft: "#6B5D45", inkFaint: "#9C8D6E",
+    pine: "#2F4B3C", pineDark: "#203528", brick: "#93402C", brickSoft: "#B96A52",
+    gold: "#B4872A", line: "#C9BA95", lineSoft: "#DED2AE", tape: "#E9DEB8",
+  },
+  fall: {
+    label: "Autumn Harvest", emoji: "🍂",
+    paper: "#EDE0C8", paperTexture: "#E3CFAA", card: "#FDF6E8", cardBack: "#F6EAD3",
+    ink: "#3A2417", inkSoft: "#7A5636", inkFaint: "#AC8B63",
+    pine: "#B5541E", pineDark: "#8A3E14", brick: "#7A3B2E", brickSoft: "#C17A52",
+    gold: "#C98A1F", line: "#D8BD8E", lineSoft: "#E9D8B5", tape: "#EFD9A8",
+  },
+  christmas: {
+    label: "Christmas", emoji: "🎄",
+    paper: "#EFEAE0", paperTexture: "#E2D9C6", card: "#FFFDF8", cardBack: "#F6F1E4",
+    ink: "#1F2E22", inkSoft: "#4C5F4F", inkFaint: "#8FA090",
+    pine: "#2E6B45", pineDark: "#1E4A2E", brick: "#B4222E", brickSoft: "#D65A5A",
+    gold: "#C79A2B", line: "#CBD6C6", lineSoft: "#E2E8DD", tape: "#E7CFC9",
+  },
+  valentines: {
+    label: "Valentine's Day", emoji: "💌",
+    paper: "#F7E4E4", paperTexture: "#F0D2D3", card: "#FFF7F7", cardBack: "#FBEAEA",
+    ink: "#3E1F27", inkSoft: "#83505C", inkFaint: "#C398A0",
+    pine: "#C23A5B", pineDark: "#9B2A47", brick: "#8B2942", brickSoft: "#D97F91",
+    gold: "#C98A9A", line: "#EFC7CE", lineSoft: "#F6DEE2", tape: "#F5D4D9",
+  },
+  july4: {
+    label: "4th of July", emoji: "🎆",
+    paper: "#EDEEEB", paperTexture: "#DDE2E6", card: "#FFFFFF", cardBack: "#F2F5F7",
+    ink: "#1B2A4A", inkSoft: "#3E5273", inkFaint: "#8695AC",
+    pine: "#22447A", pineDark: "#152E56", brick: "#B02E36", brickSoft: "#D8636A",
+    gold: "#8C97A8", line: "#C7D0DA", lineSoft: "#E1E6EB", tape: "#DCE3E8",
+  },
+  spring: {
+    label: "Spring", emoji: "🌷",
+    paper: "#EAF0E4", paperTexture: "#DCEAD3", card: "#FBFCF6", cardBack: "#F1F7EA",
+    ink: "#2C3B2A", inkSoft: "#5E7256", inkFaint: "#9BB08E",
+    pine: "#5B8A52", pineDark: "#3F6B39", brick: "#C97B9A", brickSoft: "#E0A8C0",
+    gold: "#D9A441", line: "#CFE0C4", lineSoft: "#E4EFDC", tape: "#F0E3B8",
+  },
 };
+const THEME_ORDER = ["classic", "fall", "christmas", "valentines", "july4", "spring"];
+// T is a live reference — its properties get overwritten in place when the
+// theme changes (see applyTheme in App), so every component below just
+// reads T.xxx at render time and automatically picks up the new palette.
+let T = { ...THEMES.classic };
 
 const displayFont = { fontFamily: "'Fraunces', serif" };
 const bodyFont = { fontFamily: "'Libre Baskerville', serif" };
@@ -2029,10 +2065,60 @@ function SurpriseMeModal({ recipes, members, onClose, onPick }) {
   );
 }
 
+/* ---------------------------------------------------------------------- */
+/*  Theme picker — small popover of swatches so anyone in the family can   */
+/*  switch the whole app's look for a season or holiday in one tap.        */
+/* ---------------------------------------------------------------------- */
+function ThemePicker({ themeName, onPick, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 no-print" style={{ background: "rgba(20,16,10,0.55)" }} onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-5"
+        style={{ background: T.card }}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div style={{ ...displayFont, fontWeight: 700, fontSize: 18, color: T.ink }}>Choose a theme</div>
+          <IconButton onClick={onClose} title="Close"><X size={16} /></IconButton>
+        </div>
+        <div style={{ ...bodyFont, fontSize: 12.5, color: T.inkSoft, marginBottom: 16 }}>
+          Decorate the whole recipe box for a season or holiday — everyone in the family will see it too.
+        </div>
+        <div className="flex flex-col gap-2">
+          {THEME_ORDER.map((id) => {
+            const theme = THEMES[id];
+            const active = themeName === id;
+            return (
+              <button
+                key={id}
+                onClick={() => onPick(id)}
+                className="flex items-center gap-3 p-3 rounded-xl text-left transition-colors"
+                style={{ background: active ? "rgba(47,75,60,0.08)" : "transparent", border: `1px solid ${active ? theme.pine : T.lineSoft}` }}
+              >
+                <div className="flex-shrink-0 flex" style={{ gap: 2 }}>
+                  {[theme.pine, theme.brick, theme.gold].map((c, i) => (
+                    <div key={i} style={{ width: 14, height: 14, borderRadius: "50%", background: c, border: "1px solid rgba(0,0,0,0.08)" }} />
+                  ))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div style={{ ...displayFont, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{theme.emoji} {theme.label}</div>
+                </div>
+                {active && <Check size={16} color={theme.pine} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [recipes, setRecipes] = useState([]);
+  const [themeName, setThemeName] = useState("classic");
+  const [showThemePicker, setShowThemePicker] = useState(false);
 
   const [view, setView] = useState({ type: "home" });
   const [activeTab, setActiveTab] = useState("family"); // "family" | "brand"
@@ -2051,6 +2137,19 @@ function App() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [showSurpriseMe, setShowSurpriseMe] = useState(false);
   const [cookModeRecipe, setCookModeRecipe] = useState(null);
+
+  // Applies a theme by name — mutates the shared T object in place (so every
+  // component picks up the new colors on its next render) and persists the
+  // choice for the whole family to see next time they open the box.
+  const applyTheme = useCallback(async (id, { persist = true } = {}) => {
+    const theme = THEMES[id] || THEMES.classic;
+    Object.assign(T, theme);
+    setThemeName(id);
+    setShowThemePicker(false);
+    if (persist) {
+      try { await window.storage.set("app-theme", id, true); } catch (e) { console.error("Failed to save theme", e); }
+    }
+  }, []);
 
   /* ---------------------------------------------------------------- */
   /*  Navigation helpers — remember where each recipe/list was opened  */
@@ -2083,15 +2182,21 @@ function App() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [m, r] = await Promise.all([storageGetAll("member:"), storageGetAll("recipe:")]);
+      const [m, r, savedTheme] = await Promise.all([
+        storageGetAll("member:"),
+        storageGetAll("recipe:"),
+        window.storage.get("app-theme", true).then((res) => res?.value).catch(() => null),
+      ]);
       setMembers(m.sort((a, b) => (a.dateAdded || "").localeCompare(b.dateAdded || "")));
       // Existing recipes saved before the brand-recipe feature don't have a
       // `source` field — treat those as "family" so nothing already in
       // someone's box quietly disappears or gets miscategorized.
       const normalized = r.map((rec) => ({ ...rec, source: rec.source === "brand" ? "brand" : "family" }));
       setRecipes(normalized.sort((a, b) => (b.dateAdded || "").localeCompare(a.dateAdded || "")));
+      if (savedTheme && THEMES[savedTheme]) applyTheme(savedTheme, { persist: false });
       setLoading(false);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const persistMember = useCallback(async (member) => {
@@ -2222,12 +2327,22 @@ function App() {
           </div>
           <div style={{ ...displayFont, fontWeight: 700, fontSize: 21, color: T.ink }}>The Family Recipe Box</div>
         </button>
-        <button
-          onClick={() => supabaseClient.auth.signOut()}
-          style={{ position: "absolute", right: 16, top: 20, ...monoFont, fontSize: 11.5, color: T.inkSoft, textDecoration: "underline" }}
-        >
-          Sign out
-        </button>
+        <div style={{ position: "absolute", right: 16, top: 20, display: "flex", alignItems: "center", gap: 14 }}>
+          <button
+            onClick={() => setShowThemePicker(true)}
+            title="Change theme"
+            className="flex items-center gap-1.5"
+            style={{ ...monoFont, fontSize: 11.5, color: T.pine }}
+          >
+            <Palette size={14} /> {THEMES[themeName].emoji}
+          </button>
+          <button
+            onClick={() => supabaseClient.auth.signOut()}
+            style={{ ...monoFont, fontSize: 11.5, color: T.inkSoft, textDecoration: "underline" }}
+          >
+            Sign out
+          </button>
+        </div>
 
         <div className="flex gap-2 mb-3">
           <button
@@ -2552,6 +2667,10 @@ function App() {
           onClose={() => setShowSurpriseMe(false)}
           onPick={(id) => { setShowSurpriseMe(false); openRecipe(id); }}
         />
+      )}
+
+      {showThemePicker && (
+        <ThemePicker themeName={themeName} onPick={applyTheme} onClose={() => setShowThemePicker(false)} />
       )}
 
       {confirmDelete && (
