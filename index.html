@@ -197,6 +197,18 @@
   }
 
   /* -------------------------------------------------------------- */
+  /* Cook Mode ingredient panel — a fixed sidebar on wider screens,   */
+  /* a tap-to-open sheet on narrow phones where there isn't room for  */
+  /* a permanent side panel without crowding out the step itself.     */
+  /* -------------------------------------------------------------- */
+  .cook-sidebar { display: none; }
+  .cook-ingredients-toggle-btn { display: inline-flex; }
+  @media (min-width: 768px) {
+    .cook-sidebar { display: flex; }
+    .cook-ingredients-toggle-btn { display: none; }
+  }
+
+  /* -------------------------------------------------------------- */
   /* Print styles — used by the recipe detail page's Print button.   */
   /* Anything marked .no-print (header/search, action buttons,       */
   /* modals) is hidden; the recipe card is reformatted for paper.    */
@@ -826,10 +838,20 @@ function CookMode({ recipe, onClose }) {
   const cookSteps = React.useMemo(() => buildCookSteps(recipe.directions), [recipe]);
   const [stepIdx, setStepIdx] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
+  const [checkedIngredients, setCheckedIngredients] = useState(() => new Set());
   const [timerSeconds, setTimerSeconds] = useState(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const wakeLockRef = useRef(null);
   const intervalRef = useRef(null);
+
+  const toggleIngredientChecked = (i) => {
+    setCheckedIngredients((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
 
   const step = cookSteps[stepIdx] || null;
   const suggestedSeconds = step ? parseStepTimer(step.text) : null;
@@ -921,6 +943,7 @@ function CookMode({ recipe, onClose }) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowIngredients(true)}
+            className="cook-ingredients-toggle-btn"
             style={{ ...monoFont, fontSize: 11.5, color: "#EFE7CE", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 999, padding: "7px 14px" }}
           >
             Ingredients
@@ -931,7 +954,8 @@ function CookMode({ recipe, onClose }) {
         </div>
       </div>
 
-      <div className="flex-1 flex items-stretch" style={{ minHeight: 0 }}>
+      <div className="flex-1 flex" style={{ minHeight: 0 }}>
+        <div className="flex-1 flex items-stretch" style={{ minHeight: 0 }}>
         <button onClick={goPrev} disabled={stepIdx === 0} className="flex items-center justify-center flex-shrink-0" style={{ width: "15%", opacity: stepIdx === 0 ? 0.25 : 1 }}>
           <ChevronLeft size={26} color="#EFE7CE" />
         </button>
@@ -984,6 +1008,37 @@ function CookMode({ recipe, onClose }) {
         <button onClick={goNext} disabled={isLast} className="flex items-center justify-center flex-shrink-0" style={{ width: "15%", opacity: isLast ? 0.25 : 1 }}>
           <ChevronRight size={26} color="#EFE7CE" />
         </button>
+        </div>
+
+        <div className="cook-sidebar flex-col" style={{ width: 300, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.03)", overflowY: "auto", padding: "22px 20px" }}>
+          <div style={{ ...monoFont, fontSize: 11, color: "#C9BA95", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Ingredients</div>
+          <ul style={{ ...bodyFont, fontSize: 14.5, color: "#F3ECD8" }} className="space-y-2.5">
+            {(recipe.ingredients || []).map((ing, i) => {
+              const heading = ing.match(/^#{1,6}\s*(.+)/);
+              if (heading) {
+                return (
+                  <li key={i} style={{ listStyle: "none", ...displayFont, fontWeight: 700, fontSize: 11.5, color: T.gold, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: i === 0 ? 0 : 16, marginBottom: 2 }}>
+                    {heading[1]}
+                  </li>
+                );
+              }
+              const checked = checkedIngredients.has(i);
+              return (
+                <li key={i}>
+                  <button onClick={() => toggleIngredientChecked(i)} className="flex items-start gap-2.5 text-left w-full" style={{ opacity: checked ? 0.45 : 1 }}>
+                    <span
+                      className="flex-shrink-0 flex items-center justify-center"
+                      style={{ width: 16, height: 16, marginTop: 2, borderRadius: 4, border: `1.5px solid ${checked ? T.gold : "rgba(255,255,255,0.35)"}`, background: checked ? T.gold : "transparent" }}
+                    >
+                      {checked && <Check size={11} color={T.ink} />}
+                    </span>
+                    <span style={{ textDecoration: checked ? "line-through" : "none" }}>{ing}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </div>
 
       <div className="flex items-center justify-between px-5 pb-6 pt-2 gap-3 flex-shrink-0">
