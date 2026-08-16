@@ -475,7 +475,72 @@ const INGREDIENT_UNIT_WORDS = [
 ];
 const INGREDIENT_UNIT_RE = new RegExp(`^(${INGREDIENT_UNIT_WORDS.join("|")})\\b\\.?`, "i");
 const INGREDIENT_NUM_RE = /^[\d¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]+(?:\.\d+)?(?:\s*[\-–]\s*[\d¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]+)?/;
+const UNICODE_FRACTIONS = { "¼":0.25,"½":0.5,"¾":0.75,"⅓":1/3,"⅔":2/3,"⅕":0.2,"⅖":0.4,"⅗":0.6,"⅘":0.8,"⅙":1/6,"⅚":5/6,"⅐":1/7,"⅛":0.125,"⅜":0.375,"⅝":0.625,"⅞":0.875,"⅑":1/9,"⅒":0.1 };
+const UNIT_ALIASES = {
+  cup:"cup", cups:"cup", tsp:"tsp", tsps:"tsp", teaspoon:"tsp", teaspoons:"tsp",
+  tbsp:"tbsp", tbsps:"tbsp", tablespoon:"tbsp", tablespoons:"tbsp",
+  oz:"oz", ounce:"oz", ounces:"oz", lb:"lb", lbs:"lb", pound:"lb", pounds:"lb",
+  kg:"kg", g:"g", gram:"g", grams:"g", ml:"ml", l:"l", liter:"l", liters:"l",
+  pinch:"pinch", pinches:"pinch", stick:"stick", sticks:"stick",
+  clove:"clove", cloves:"clove", slice:"slice", slices:"slice",
+  can:"can", cans:"can", package:"pkg", packages:"pkg", bag:"bag", bags:"bag",
+};
+const UNIT_DISPLAY = {
+  cup:{s:"cup",p:"cups",sp:true}, tsp:{s:"tsp",p:"tsp",sp:false}, tbsp:{s:"tbsp",p:"tbsp",sp:false},
+  oz:{s:"oz",p:"oz",sp:false}, lb:{s:"lb",p:"lbs",sp:false}, kg:{s:"kg",p:"kg",sp:false},
+  g:{s:"g",p:"g",sp:false}, ml:{s:"ml",p:"ml",sp:false}, l:{s:"l",p:"l",sp:false},
+  pinch:{s:"pinch",p:"pinches",sp:true}, stick:{s:"stick",p:"sticks",sp:true},
+  clove:{s:"clove",p:"cloves",sp:true}, slice:{s:"slice",p:"slices",sp:true},
+  can:{s:"can",p:"cans",sp:true}, pkg:{s:"package",p:"packages",sp:true}, bag:{s:"bag",p:"bags",sp:true},
+};
 
+function parseQtyString(s) {
+  if (!s || /[\-–]/.test(s)) return null; // ranges aren't safely summable
+  const m = s.trim().match(/^(\d+(?:\.\d+)?)?\s*([¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞⅑⅒])?$/);
+  if (!m || (!m[1] && !m[2])) return null;
+  return (m[1] ? parseFloat(m[1]) : 0) + (m[2] ? UNICODE_FRACTIONS[m[2]] : 0);
+}
+function formatQtyDisplay(val) {
+  const whole = Math.floor(val + 1e-9);
+  const frac = val - whole;
+  let fracStr = "";
+  for (const [sym, dec] of Object.entries(UNICODE_FRACTIONS)) {
+    if (Math.abs(frac - dec) < 0.02) { fracStr = sym; break; }
+  }
+  if (!fracStr && frac > 0.02) return String(Math.round(val * 100) / 100);
+  return (whole === 0 && fracStr) ? fracStr : `${whole}${fracStr}`;
+}
+function parseAmountForSum(amountStr) {
+  if (!amountStr) return null;
+  const m = amountStr.trim().match(/^([\d¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞⅑⅒.]+)\s*([a-zA-Z]+)?\.?$/);
+  if (!m) return null;
+  const qty = parseQtyString(m[1]);
+  if (qty === null) return null;
+  const unitRaw = (m[2] || "").toLowerCase();
+  return { qty, unit: UNIT_ALIASES[unitRaw] || unitRaw };
+}
+function formatUnitAmount(qty, unit) {
+  const qtyStr = formatQtyDisplay(qty);
+  const d = UNIT_DISPLAY[unit];
+  if (!unit) return qtyStr;
+  if (!d) return `${qtyStr} ${unit}`;
+  const label = qty === 1 ? d.s : d.p;
+  return d.sp ? `${qtyStr} ${label}` : `${qtyStr}${label}`;
+}
+// Adds amounts that share a unit ("4 oz" + "4 oz" -> "8oz"); different or
+// unparseable units are kept side by side, since combining e.g. "2 tsp" +
+// "1 cup" safely needs real unit conversion.
+function summarizeAmounts(amounts) {
+  const byUnit = new Map();
+  const leftover = [];
+  amounts.forEach((a) => {
+    const parsed = parseAmountForSum(a);
+    if (parsed) byUnit.set(parsed.unit, (byUnit.get(parsed.unit) || 0) + parsed.qty);
+    else leftover.push(a);
+  });
+  const summed = [...byUnit.entries()].map(([unit, qty]) => formatUnitAmount(qty, unit));
+  return [...summed, ...leftover].join("  +  ");
+}
 // Splits "1 cup unsalted butter (2 sticks)" into amount: "1 cup" and
 // core: "unsalted butter (2 sticks)". Ingredients with no leading number
 // ("Mini marshmallows") get amount: "" and core: the original text.
@@ -2297,7 +2362,7 @@ function ShoppingListModal({ items, onClose, onToggle, onToggleMany, onRemove, o
             {combinedGroups.map((g) => {
               const allChecked = g.entries.every((e) => e.checked);
               const amounts = g.entries.map((e) => e.amount).filter(Boolean);
-              const subtitle = amounts.length ? amounts.join("  +  ") : (g.entries.length > 1 ? `×${g.entries.length}` : "");
+              const subtitle = summarizeAmounts(amounts) || (g.entries.length > 1 ? `×${g.entries.length}` : "");
               const recipeNames = Array.from(new Set(g.entries.map((e) => e.recipeName).filter(Boolean)));
               const ids = g.entries.map((e) => e.id);
               return (
@@ -2569,7 +2634,8 @@ function App() {
     groups.forEach((g) => {
       const allChecked = g.entries.every((e) => e.checked);
       const amounts = g.entries.map((e) => e.amount).filter(Boolean);
-      const subtitle = amounts.length ? ` — ${amounts.join(" + ")}` : (g.entries.length > 1 ? ` — ×${g.entries.length}` : "");
+      const combined = summarizeAmounts(amounts); 
+      const subtitle = combined ? ` — ${combined}` : (g.entries.length > 1 ? ` — ×${g.entries.length}` : "");
       lines.push(`${allChecked ? "[x]" : "[ ]"} ${capitalizeFirst(g.label)}${subtitle}`);
     });
     return copyTextToClipboard(lines.join("\n").trim());
