@@ -343,6 +343,7 @@ const Play = (p) => <Ico {...p}><polygon points="6 3 20 12 6 21 6 3"/></Ico>;
 const Pause = (p) => <Ico {...p}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></Ico>;
 const RotateCcw = (p) => <Ico {...p}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></Ico>;
 const Palette = (p) => <Ico {...p}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C22 6.012 17.461 2 12 2z"/></Ico>;
+const ShoppingCart = (p) => <Ico {...p}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></Ico>;
 
 /* ---------------------------------------------------------------------- */
 /*  Theme                                                                  */
@@ -533,27 +534,55 @@ function formatTimer(totalSeconds) {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-// Simple three-beep alert using the Web Audio API — no external audio file
-// needed, and it works even if the tab has been silent up to this point.
-function playTimerAlert() {
+// Alert used when a Cook Mode timer finishes: a Web Audio beep pattern plus
+// a vibration fallback (phones only) so the alert still lands even in an
+// environment that's blocking audio (e.g. device on silent/mute).
+function playTimerAlert(ctx) {
   try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    const ctx = new Ctx();
-    [0, 0.35, 0.7].forEach((delay) => {
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+  } catch (e) { /* vibration unavailable — ignore */ }
+  try {
+    if (!ctx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      ctx = new Ctx();
+    }
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
+    [0, 0.3, 0.6, 0.9].forEach((delay) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 880;
+      osc.type = "square";
+      osc.frequency.value = 988;
       osc.connect(gain);
       gain.connect(ctx.destination);
       const start = ctx.currentTime + delay;
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.35, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.28);
+      gain.gain.exponentialRampToValueAtTime(0.5, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
       osc.start(start);
-      osc.stop(start + 0.3);
+      osc.stop(start + 0.26);
     });
-  } catch (e) { /* Web Audio unavailable — fail silently */ }
+  } catch (e) { /* Web Audio unavailable — vibration (if any) still fired above */ }
+}
+
+// A tiny, near-instant click sound played the moment "Start timer" is
+// tapped — purely so there's immediate audible proof the audio pipeline is
+// working, since the real alarm won't fire until later (when it's harder
+// to tell whether silence means "not done yet" or "sound is blocked").
+function playUnlockTick(ctx) {
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 660;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const start = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.3, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.12);
+    osc.start(start);
+    osc.stop(start + 0.14);
+  } catch (e) { /* ignore */ }
 }
 
 async function copyTextToClipboard(text) {
@@ -879,6 +908,20 @@ function CookMode({ recipe, onClose }) {
   const [timerRunning, setTimerRunning] = useState(false);
   const wakeLockRef = useRef(null);
   const intervalRef = useRef(null);
+  const audioCtxRef = useRef(null);
+
+  // Created lazily, and only ever from inside a real tap handler (Start /
+  // Resume) — that's what lets the browser actually let sound play later
+  // when the timer hits zero, instead of silently blocking it.
+  const unlockAudio = () => {
+    try {
+      if (!audioCtxRef.current) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        audioCtxRef.current = new Ctx();
+      }
+      if (audioCtxRef.current.state === "suspended") audioCtxRef.current.resume().catch(() => {});
+    } catch (e) { /* Web Audio unavailable — timer still works, just silently */ }
+  };
 
   const toggleIngredientChecked = (i) => {
     setCheckedIngredients((prev) => {
@@ -916,6 +959,10 @@ function CookMode({ recipe, onClose }) {
         wakeLockRef.current.release().catch(() => {});
         wakeLockRef.current = null;
       }
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
     };
   }, []);
 
@@ -934,7 +981,7 @@ function CookMode({ recipe, onClose }) {
         if (s <= 1) {
           clearInterval(intervalRef.current);
           setTimerRunning(false);
-          playTimerAlert();
+          playTimerAlert(audioCtxRef.current);
           return 0;
         }
         return s - 1;
@@ -944,6 +991,7 @@ function CookMode({ recipe, onClose }) {
   }, [timerRunning]);
 
   const startTimer = (seconds) => {
+    unlockAudio();
     setTimerSeconds(seconds);
     setTimerRunning(true);
   };
@@ -1019,7 +1067,7 @@ function CookMode({ recipe, onClose }) {
                   <div className="flex gap-2">
                     {timerSeconds > 0 && (
                       <button
-                        onClick={() => setTimerRunning((r) => !r)}
+                        onClick={() => { unlockAudio(); setTimerRunning((r) => !r); }}
                         className="flex items-center gap-1.5"
                         style={{ ...monoFont, fontSize: 11.5, color: T.inkSoft, border: `1px solid ${T.line}`, borderRadius: 999, padding: "7px 14px", background: "#fff" }}
                       >
@@ -1455,7 +1503,7 @@ function ConfirmDialog({ text, onCancel, onConfirm }) {
 /* ---------------------------------------------------------------------- */
 /*  Recipe detail page                                                     */
 /* ---------------------------------------------------------------------- */
-function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, onToggleFavorite, onOpenArchive, onOpenMember, onOpenRecipe, onCookMode }) {
+function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, onToggleFavorite, onOpenArchive, onOpenMember, onOpenRecipe, onCookMode, onAddToShoppingList }) {
   const relatedRecipes = (recipe.relatedIds || []).map((id) => (allRecipes || []).find((r) => r.id === id)).filter(Boolean);
   const [toast, setToast] = useState("");
   const isBrand = recipe.source === "brand";
@@ -1548,6 +1596,16 @@ function RecipeDetail({ recipe, member, allRecipes, onBack, onEdit, onDelete, on
               style={{ background: T.pine, color: "#fff", ...displayFont, fontWeight: 600, fontSize: 15 }}
             >
               <Flame size={17} /> Start Cook Mode
+            </button>
+          )}
+
+          {recipe.ingredients?.length > 0 && (
+            <button
+              onClick={() => { onAddToShoppingList(recipe); showToast("Added to shopping list"); }}
+              className="no-print mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border transition-colors"
+              style={{ borderColor: T.line, color: T.pine, ...monoFont, fontSize: 13 }}
+            >
+              <ShoppingCart size={15} /> Add to Shopping List
             </button>
           )}
 
@@ -2113,12 +2171,95 @@ function ThemePicker({ themeName, onPick, onClose }) {
   );
 }
 
+/* ---------------------------------------------------------------------- */
+/*  Shopping List — a running grocery list built by adding recipes' worth  */
+/*  of ingredients at a time. Items stay grouped by the recipe they came   */
+/*  from, and re-adding a recipe replaces its old items so quantities      */
+/*  stay in sync if you edit the recipe later. Shared across the family.   */
+/* ---------------------------------------------------------------------- */
+function ShoppingListModal({ items, onClose, onToggle, onRemove, onClearChecked, onClearAll, onCopy }) {
+  const [copied, setCopied] = useState(false);
+  const grouped = [];
+  const byRecipe = new Map();
+  items.forEach((it) => {
+    const key = it.recipeName || "Other";
+    if (!byRecipe.has(key)) { byRecipe.set(key, []); grouped.push(key); }
+    byRecipe.get(key).push(it);
+  });
+  const uncheckedCount = items.filter((it) => !it.checked).length;
+
+  const handleCopy = async () => {
+    const ok = await onCopy();
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1800); }
+  };
+
+  return (
+    <ModalShell title="Shopping List" onClose={onClose}>
+      <div style={{ ...monoFont, fontSize: 12, color: T.inkSoft, marginBottom: 14 }}>
+        {items.length === 0 ? "Your list is empty." : `${uncheckedCount} item${uncheckedCount !== 1 ? "s" : ""} left to get`}
+      </div>
+
+      {items.length === 0 ? (
+        <EmptyState
+          icon={<ShoppingCart size={22} color={T.pine} />}
+          title="Nothing on the list yet"
+          subtitle={'Open a recipe and tap "Add to Shopping List" to start building one.'}
+        />
+      ) : (
+        <>
+          <div className="flex flex-col gap-5 mb-5">
+            {grouped.map((recipeName) => (
+              <div key={recipeName}>
+                <Eyebrow style={{ marginBottom: 8 }}>{recipeName}</Eyebrow>
+                <div className="flex flex-col gap-1.5">
+                  {byRecipe.get(recipeName).map((it) => (
+                    <div key={it.id} className="flex items-start gap-2.5">
+                      <button
+                        onClick={() => onToggle(it.id)}
+                        className="flex-shrink-0 flex items-center justify-center"
+                        style={{ width: 18, height: 18, marginTop: 2, borderRadius: 5, border: `1.5px solid ${it.checked ? T.pine : T.line}`, background: it.checked ? T.pine : "#fff" }}
+                      >
+                        {it.checked && <Check size={12} color="#fff" />}
+                      </button>
+                      <span style={{ ...bodyFont, fontSize: 14.5, color: it.checked ? T.inkFaint : T.ink, textDecoration: it.checked ? "line-through" : "none", flex: 1 }}>
+                        {it.text}
+                      </span>
+                      <button onClick={() => onRemove(it.id)} style={{ color: T.inkFaint, flexShrink: 0, marginTop: 2 }} title="Remove item">
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <GhostButton onClick={handleCopy} style={{ flex: 1, justifyContent: "center" }}>
+              <Share2 size={13} /> {copied ? "Copied!" : "Copy list"}
+            </GhostButton>
+            <GhostButton onClick={onClearChecked} style={{ flex: 1, justifyContent: "center" }}>
+              Clear checked
+            </GhostButton>
+          </div>
+          <button onClick={onClearAll} className="w-full mt-3 py-1" style={{ ...monoFont, fontSize: 11.5, color: T.brick, textDecoration: "underline" }}>
+            Clear entire list
+          </button>
+        </>
+      )}
+    </ModalShell>
+  );
+}
+
 function App() {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [themeName, setThemeName] = useState("classic");
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [shoppingList, setShoppingList] = useState([]);
+  const [showShoppingList, setShowShoppingList] = useState(false);
+  const [confirmClearShopping, setConfirmClearShopping] = useState(false);
 
   const [view, setView] = useState({ type: "home" });
   const [activeTab, setActiveTab] = useState("family"); // "family" | "brand"
@@ -2182,10 +2323,11 @@ function App() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [m, r, savedTheme] = await Promise.all([
+      const [m, r, savedTheme, savedShoppingList] = await Promise.all([
         storageGetAll("member:"),
         storageGetAll("recipe:"),
         window.storage.get("app-theme", true).then((res) => res?.value).catch(() => null),
+        window.storage.get("shopping-list", true).then((res) => res?.value).catch(() => null),
       ]);
       setMembers(m.sort((a, b) => (a.dateAdded || "").localeCompare(b.dateAdded || "")));
       // Existing recipes saved before the brand-recipe feature don't have a
@@ -2194,6 +2336,9 @@ function App() {
       const normalized = r.map((rec) => ({ ...rec, source: rec.source === "brand" ? "brand" : "family" }));
       setRecipes(normalized.sort((a, b) => (b.dateAdded || "").localeCompare(a.dateAdded || "")));
       if (savedTheme && THEMES[savedTheme]) applyTheme(savedTheme, { persist: false });
+      if (savedShoppingList) {
+        try { setShoppingList(JSON.parse(savedShoppingList)); } catch (e) { /* corrupt/missing — start empty */ }
+      }
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2207,6 +2352,80 @@ function App() {
     try { await window.storage.set(`recipe:${recipe.id}`, JSON.stringify(recipe), true); }
     catch (e) { console.error("Failed to save recipe", e); }
   }, []);
+
+  const persistShoppingList = useCallback(async (list) => {
+    try { await window.storage.set("shopping-list", JSON.stringify(list), true); }
+    catch (e) { console.error("Failed to save shopping list", e); }
+  }, []);
+
+  // Adds a recipe's ingredients to the shared shopping list. Re-adding the
+  // same recipe replaces its previous items first, so editing a recipe's
+  // ingredients and re-adding it keeps the list in sync instead of piling
+  // up duplicates.
+  const addRecipeToShoppingList = (recipe) => {
+    const ingredientLines = (recipe.ingredients || []).filter((ing) => !/^#{1,6}\s*/.test(ing));
+    setShoppingList((prev) => {
+      const withoutThisRecipe = prev.filter((item) => item.recipeId !== recipe.id);
+      const newItems = ingredientLines.map((text) => ({
+        id: makeId("shop"),
+        text,
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        checked: false,
+      }));
+      const next = [...withoutThisRecipe, ...newItems];
+      persistShoppingList(next);
+      return next;
+    });
+  };
+
+  const toggleShoppingItem = (id) => {
+    setShoppingList((prev) => {
+      const next = prev.map((it) => (it.id === id ? { ...it, checked: !it.checked } : it));
+      persistShoppingList(next);
+      return next;
+    });
+  };
+
+  const removeShoppingItem = (id) => {
+    setShoppingList((prev) => {
+      const next = prev.filter((it) => it.id !== id);
+      persistShoppingList(next);
+      return next;
+    });
+  };
+
+  const clearCheckedShoppingItems = () => {
+    setShoppingList((prev) => {
+      const next = prev.filter((it) => !it.checked);
+      persistShoppingList(next);
+      return next;
+    });
+  };
+
+  const clearAllShoppingItems = () => {
+    setShoppingList([]);
+    persistShoppingList([]);
+    setConfirmClearShopping(false);
+  };
+
+  const copyShoppingListToClipboard = async () => {
+    const grouped = new Map();
+    shoppingList.forEach((it) => {
+      const key = it.recipeName || "Other";
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(it);
+    });
+    const lines = [];
+    for (const [recipeName, its] of grouped) {
+      lines.push(recipeName.toUpperCase());
+      its.forEach((it) => lines.push(`${it.checked ? "[x]" : "[ ]"} ${it.text}`));
+      lines.push("");
+    }
+    return copyTextToClipboard(lines.join("\n").trim());
+  };
+
+  const uncheckedShoppingCount = shoppingList.filter((it) => !it.checked).length;
 
   const saveMember = async (member) => {
     setMembers((prev) => {
@@ -2328,6 +2547,25 @@ function App() {
           <div style={{ ...displayFont, fontWeight: 700, fontSize: 21, color: T.ink }}>The Family Recipe Box</div>
         </button>
         <div style={{ position: "absolute", right: 16, top: 20, display: "flex", alignItems: "center", gap: 14 }}>
+          <button
+            onClick={() => setShowShoppingList(true)}
+            title="Shopping list"
+            className="flex items-center"
+            style={{ position: "relative", color: T.pine }}
+          >
+            <ShoppingCart size={16} />
+            {uncheckedShoppingCount > 0 && (
+              <span
+                style={{
+                  position: "absolute", top: -7, right: -8, minWidth: 15, height: 15, padding: "0 3px",
+                  borderRadius: 999, background: T.brick, color: "#fff", ...monoFont, fontSize: 9.5,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {uncheckedShoppingCount}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setShowThemePicker(true)}
             title="Change theme"
@@ -2605,6 +2843,7 @@ function App() {
           onOpenMember={(id) => navigateTo({ type: "member", id })}
           onOpenRecipe={openRecipe}
           onCookMode={setCookModeRecipe}
+          onAddToShoppingList={addRecipeToShoppingList}
         />
       ) : view.type === "cookbook" ? (
         <CookbookExport recipes={familyRecipes} members={members} onBack={() => navigateTo({ type: "home" })} />
@@ -2671,6 +2910,26 @@ function App() {
 
       {showThemePicker && (
         <ThemePicker themeName={themeName} onPick={applyTheme} onClose={() => setShowThemePicker(false)} />
+      )}
+
+      {showShoppingList && (
+        <ShoppingListModal
+          items={shoppingList}
+          onClose={() => setShowShoppingList(false)}
+          onToggle={toggleShoppingItem}
+          onRemove={removeShoppingItem}
+          onClearChecked={clearCheckedShoppingItems}
+          onClearAll={() => setConfirmClearShopping(true)}
+          onCopy={copyShoppingListToClipboard}
+        />
+      )}
+
+      {confirmClearShopping && (
+        <ConfirmDialog
+          text="Clear the entire shopping list? This can't be undone."
+          onCancel={() => setConfirmClearShopping(false)}
+          onConfirm={clearAllShoppingItems}
+        />
       )}
 
       {confirmDelete && (
